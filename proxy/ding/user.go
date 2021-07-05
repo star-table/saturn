@@ -14,74 +14,54 @@ func (d *dingProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 		AccessToken: ctx.TenantAccessToken,
 		AgentId:     d.AgentId,
 	}
-	if r.DepartmentID == "" { // 获取所有用户
+	deptIds := make([]string, 0)
+	if r.DepartmentID == "" {
+		deptIds = append(deptIds, "1")
+	} else {
+		deptIds = append(deptIds, r.DepartmentID)
+	}
+	if r.FetchChild {
 		allDeptIdsResp := d.GetDeptIds(ctx, req.GetDeptIdsReq{
-			FetchChild: true,
+			ParentId:   deptIds[0],
+			FetchChild: r.FetchChild,
 		})
 		if !allDeptIdsResp.Suc {
 			return resp.GetUsersResp{Resp: allDeptIdsResp.Resp}
 		}
-		allDeptIdsResp.Data = append(allDeptIdsResp.Data, "1")
-		userList := make([]resp.User, 0)
-		userContains := map[string]bool{}
-		for _, deptIdStr := range allDeptIdsResp.Data {
-			hasMore := true
-			var cursor int64 = 0
-			deptId, _ := strconv.ParseInt(deptIdStr, 10, 64)
-			for hasMore {
-				deptUserListResp, err := client.GetDeptUserListV2(deptId, cursor, 100, "", nil, "")
-				if err != nil {
-					log.Println(err)
-					break
-				}
-				if deptUserListResp.ErrCode != 0 {
-					log.Println(deptUserListResp.ErrCode, deptUserListResp.ErrMsg)
-					break
-				}
-				cursor = deptUserListResp.Result.NextCursor
-				hasMore = deptUserListResp.Result.HasMore
+		deptIds = append(deptIds, allDeptIdsResp.Data...)
+	}
+	userList := make([]resp.User, 0)
+	userContains := map[string]bool{}
+	for _, deptIdStr := range deptIds {
+		hasMore := true
+		var cursor int64 = 0
+		deptId, _ := strconv.ParseInt(deptIdStr, 10, 64)
+		for hasMore {
+			deptUserListResp, err := client.GetDeptUserListV2(deptId, cursor, 100, "", nil, "")
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			if deptUserListResp.ErrCode != 0 {
+				log.Println(deptUserListResp.ErrCode, deptUserListResp.ErrMsg)
+				break
+			}
+			cursor = deptUserListResp.Result.NextCursor
+			hasMore = deptUserListResp.Result.HasMore
 
-				respUserList := convertUsers(deptUserListResp.Result.List)
-				for _, respUser := range respUserList {
-					if !userContains[respUser.OpenID] {
-						userList = append(userList, respUser)
-						userContains[respUser.OpenID] = true
-					}
+			respUserList := convertUsers(deptUserListResp.Result.List)
+			for _, respUser := range respUserList {
+				if !userContains[respUser.OpenID] {
+					userList = append(userList, respUser)
+					userContains[respUser.OpenID] = true
 				}
 			}
 		}
-		return resp.GetUsersResp{
-			Resp: resp.SucResp(),
-			Data: resp.GetUsersRespData{
-				HasMore:   false,
-				PageToken: "",
-				Users:     userList,
-			},
-		}
 	}
-
-	deptId, err := strconv.ParseInt(r.DepartmentID, 10, 64)
-	if err != nil {
-		return resp.GetUsersResp{Resp: resp.ErrResp(err)}
-	}
-	cursor, err := strconv.ParseInt(r.PageToken, 10, 64)
-	if err != nil {
-		return resp.GetUsersResp{Resp: resp.ErrResp(err)}
-	}
-	deptUserListResp, err := client.GetDeptUserListV2(deptId, cursor, r.PageSize, "", nil, "")
-	if err != nil {
-		return resp.GetUsersResp{Resp: resp.ErrResp(err)}
-	}
-	if deptUserListResp.ErrCode != 0 {
-		return resp.GetUsersResp{Resp: resp.Resp{Code: deptUserListResp.ErrCode, Msg: deptUserListResp.ErrMsg}}
-	}
-
 	return resp.GetUsersResp{
 		Resp: resp.SucResp(),
 		Data: resp.GetUsersRespData{
-			HasMore:   deptUserListResp.Result.HasMore,
-			PageToken: strconv.FormatInt(deptUserListResp.Result.NextCursor, 10),
-			Users:     convertUsers(deptUserListResp.Result.List),
+			Users: userList,
 		},
 	}
 }

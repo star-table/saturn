@@ -7,9 +7,7 @@ type GetUsersResp struct {
 }
 
 type GetUsersRespData struct {
-	HasMore   bool   `json:"hasMore"`
-	PageToken string `json:"pageToken"`
-	Users     []User `json:"users"`
+	Users []User `json:"users"`
 }
 
 type User struct {

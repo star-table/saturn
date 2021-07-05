@@ -34,7 +34,7 @@ func assertEqual(t *testing.T, val interface{}, want interface{}) {
 func NewTestSDK() *sdk {
 	s := New()
 	s.RegistryPlatform(ding, ding2.NewDingProxy(36342, "suiteocpiljyoalvbhrbi", "d1XKtyVpocDrOVJrDqPfqysmLGX7pinWS7iA8l5T7OWPd8aWZWNRfXEJrHoyb5Ng", "", "12345645615313", "1234567890123456789012345678901234567890123"))
-	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", "cd7a0f2e081e0b7e0151867e4cb11f22a8d1da10"))
+	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", "04be22cac01cb4b0c0366074511f3fbe65d295ae"))
 	return s
 }
 

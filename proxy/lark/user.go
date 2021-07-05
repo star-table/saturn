@@ -13,65 +13,54 @@ func (l *larkProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 	client := sdk.Tenant{
 		TenantAccessToken: ctx.TenantAccessToken,
 	}
+	deptIds := make([]string, 0)
 	if r.DepartmentID == "" {
+		deptIds = append(deptIds, "0")
+	} else {
+		deptIds = append(deptIds, r.DepartmentID)
+	}
+	if r.FetchChild {
 		allDeptIdsResp := l.GetDeptIds(ctx, req.GetDeptIdsReq{
-			FetchChild: true,
+			ParentId:   deptIds[0],
+			FetchChild: r.FetchChild,
 		})
 		if !allDeptIdsResp.Suc {
 			return resp.GetUsersResp{Resp: allDeptIdsResp.Resp}
 		}
-		allDeptIdsResp.Data = append(allDeptIdsResp.Data, "0")
-		userList := make([]resp.User, 0)
-		userContains := map[string]bool{}
-		for _, deptId := range allDeptIdsResp.Data {
-			hasMore := true
-			pageToken := ""
-			for hasMore {
-				deptUserListResp, err := client.GetUsersV3("", "", deptId, pageToken, 100)
-				if err != nil {
-					log.Println(err)
-					break
-				}
-				if deptUserListResp.Code != 0 {
-					log.Println(deptUserListResp.Code, deptUserListResp.Msg)
-					break
-				}
-				pageToken = deptUserListResp.Data.PageToken
-				hasMore = deptUserListResp.Data.HasMore
+		deptIds = append(deptIds, allDeptIdsResp.Data...)
+	}
 
-				respUserList := convertUsers(deptUserListResp.Data.Items)
-				for _, respUser := range respUserList {
-					if !userContains[respUser.OpenID] {
-						userList = append(userList, respUser)
-						userContains[respUser.OpenID] = true
-					}
+	userList := make([]resp.User, 0)
+	userContains := map[string]bool{}
+	for _, deptId := range deptIds {
+		hasMore := true
+		pageToken := ""
+		for hasMore {
+			deptUserListResp, err := client.GetUsersV3("", "", deptId, pageToken, 100)
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			if deptUserListResp.Code != 0 {
+				log.Println(deptUserListResp.Code, deptUserListResp.Msg)
+				break
+			}
+			pageToken = deptUserListResp.Data.PageToken
+			hasMore = deptUserListResp.Data.HasMore
+
+			respUserList := convertUsers(deptUserListResp.Data.Items)
+			for _, respUser := range respUserList {
+				if !userContains[respUser.OpenID] {
+					userList = append(userList, respUser)
+					userContains[respUser.OpenID] = true
 				}
 			}
 		}
-		return resp.GetUsersResp{
-			Resp: resp.SucResp(),
-			Data: resp.GetUsersRespData{
-				HasMore:   false,
-				PageToken: "",
-				Users:     userList,
-			},
-		}
 	}
-
-	deptUserListResp, err := client.GetUsersV3("", "", r.DepartmentID, r.PageToken, r.PageSize)
-	if err != nil {
-		return resp.GetUsersResp{Resp: resp.ErrResp(err)}
-	}
-	if deptUserListResp.Code != 0 {
-		return resp.GetUsersResp{Resp: resp.Resp{Code: deptUserListResp.Code, Msg: deptUserListResp.Msg}}
-	}
-
 	return resp.GetUsersResp{
 		Resp: resp.SucResp(),
 		Data: resp.GetUsersRespData{
-			HasMore:   deptUserListResp.Data.HasMore,
-			PageToken: deptUserListResp.Data.PageToken,
-			Users:     convertUsers(deptUserListResp.Data.Items),
+			Users: userList,
 		},
 	}
 }
