@@ -18,11 +18,9 @@ func (d *dingProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp
 	deptIdContains := map[string]bool{}
 	q := queue.New()
 	q.Push("1")
-	fetchChild := true
 	if req.ParentId != "" {
 		q.Clear()
 		q.Push(req.ParentId)
-		fetchChild = false
 	}
 	for {
 		obj, err := q.Pop()
@@ -43,7 +41,7 @@ func (d *dingProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp
 			deptStrId := strconv.FormatInt(subId, 10)
 			if !deptIdContains[deptStrId] {
 				deptIdContains[deptStrId] = true
-				if fetchChild {
+				if req.FetchChild {
 					q.Push(deptStrId)
 				}
 			}

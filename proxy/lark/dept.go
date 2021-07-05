@@ -17,11 +17,9 @@ func (l *larkProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp
 	deptIdContains := map[string]bool{}
 	q := queue.New()
 	q.Push("0")
-	fetchChild := true
 	if req.ParentId != "" {
 		q.Clear()
 		q.Push(req.ParentId)
-		fetchChild = false
 	}
 	for {
 		obj, err := q.Pop()
@@ -47,7 +45,7 @@ func (l *larkProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp
 			for _, deptInfo := range deptSimpleInfoResp.Data.DepartmentInfos {
 				if !deptIdContains[deptInfo.Id] {
 					deptIdContains[deptInfo.Id] = true
-					if fetchChild {
+					if req.FetchChild {
 						q.Push(deptInfo.Id)
 					}
 				}

@@ -14,7 +14,9 @@ func (l *larkProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 		TenantAccessToken: ctx.TenantAccessToken,
 	}
 	if r.DepartmentID == "" {
-		allDeptIdsResp := l.GetDeptIds(ctx, req.GetDeptIdsReq{})
+		allDeptIdsResp := l.GetDeptIds(ctx, req.GetDeptIdsReq{
+			FetchChild: true,
+		})
 		if !allDeptIdsResp.Suc {
 			return resp.GetUsersResp{Resp: allDeptIdsResp.Resp}
 		}

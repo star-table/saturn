@@ -15,7 +15,9 @@ func (d *dingProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 		AgentId:     d.AgentId,
 	}
 	if r.DepartmentID == "" { // 获取所有用户
-		allDeptIdsResp := d.GetDeptIds(ctx, req.GetDeptIdsReq{})
+		allDeptIdsResp := d.GetDeptIds(ctx, req.GetDeptIdsReq{
+			FetchChild: true,
+		})
 		if !allDeptIdsResp.Suc {
 			return resp.GetUsersResp{Resp: allDeptIdsResp.Resp}
 		}
