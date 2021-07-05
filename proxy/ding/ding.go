@@ -1,4 +1,4 @@
-package proxy
+package ding
 
 import (
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
@@ -12,6 +12,7 @@ type dingProxy struct {
 	Ticket      string
 	Token       string
 	AesKey      string
+	AgentId     int64
 }
 
 func NewDingProxy(appId int64, suiteKey, suiteSecret, ticket, token, aesKey string) *dingProxy {
@@ -59,10 +60,12 @@ func (d *dingProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessT
 	if targetAgent == nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.Resp{Code: -1, Msg: "target agent is null"}}
 	}
+	d.AgentId = targetAgent.AgentId
 	return resp.GetTenantAccessTokenResp{
 		Resp: resp.SucResp(),
-
-		Token:  tokenInfo.AccessToken,
-		Expire: tokenInfo.ExpiresIn,
+		Data: resp.GetTenantAccessTokenRespData{
+			Token:  tokenInfo.AccessToken,
+			Expire: tokenInfo.ExpiresIn,
+		},
 	}
 }

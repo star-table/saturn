@@ -2,13 +2,17 @@ package saturn
 
 import (
 	"fmt"
-	"gitea.bjx.cloud/allstar/saturn/proxy"
+	"gitea.bjx.cloud/allstar/saturn/model/req"
+	ding2 "gitea.bjx.cloud/allstar/saturn/proxy/ding"
+	lark2 "gitea.bjx.cloud/allstar/saturn/proxy/lark"
+	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"testing"
 )
 
 const (
-	ding = "ding"
-	lark = "lark"
+	ding   = "ding"
+	lark   = "lark"
+	wechat = "wechat"
 )
 
 type TestCase struct {
@@ -18,7 +22,7 @@ type TestCase struct {
 
 var testcases = []TestCase{
 	{platform: ding, tenantKey: "ding696a8496a96bcf58a1320dcb25e91351"},
-	{platform: lark, tenantKey: "2e99b3ab0b0f1654"},
+	{platform: lark, tenantKey: "2ed263bf32cf1651"},
 }
 
 func assertEqual(t *testing.T, val interface{}, want interface{}) {
@@ -27,18 +31,41 @@ func assertEqual(t *testing.T, val interface{}, want interface{}) {
 	}
 }
 
-func NewSDK() *sdk {
+func NewTestSDK() *sdk {
 	s := New()
-	s.RegistryPlatform(ding, proxy.NewDingProxy(36342, "suiteocpiljyoalvbhrbi", "d1XKtyVpocDrOVJrDqPfqysmLGX7pinWS7iA8l5T7OWPd8aWZWNRfXEJrHoyb5Ng", "", "12345645615313", "1234567890123456789012345678901234567890123"))
-	s.RegistryPlatform(lark, proxy.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", "a63005f5f7e2ba8e492485969c3880c8e4aa8f4d"))
+	s.RegistryPlatform(ding, ding2.NewDingProxy(36342, "suiteocpiljyoalvbhrbi", "d1XKtyVpocDrOVJrDqPfqysmLGX7pinWS7iA8l5T7OWPd8aWZWNRfXEJrHoyb5Ng", "", "12345645615313", "1234567890123456789012345678901234567890123"))
+	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", "6be486a16dce1daf2cfdab89297d5e75daf9b0a8"))
 	return s
 }
 
-func TestNew(t *testing.T) {
-	s := NewSDK()
+func TestSdk_GetCaller(t *testing.T) {
+	s := NewTestSDK()
 	for _, testcase := range testcases {
-		resp := s.GetTenantAccessToken(testcase.platform, testcase.tenantKey)
-		fmt.Println(resp)
-		assertEqual(t, resp.Suc, true)
+		_, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		assertEqual(t, err, nil)
+	}
+}
+
+func TestCaller_GetUsers(t *testing.T) {
+	s := NewTestSDK()
+	for _, testcase := range testcases {
+		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
+		cer, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		assertEqual(t, err, nil)
+		r := cer.GetUsers(req.GetUsersReq{})
+		t.Log(json.ToJsonIgnoreError(r))
+		assertEqual(t, r.Suc, true)
+	}
+}
+
+func TestCaller_GetDeptIds(t *testing.T) {
+	s := NewTestSDK()
+	for _, testcase := range testcases {
+		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
+		cer, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		assertEqual(t, err, nil)
+		r := cer.GetDeptIds(req.GetDeptIdsReq{})
+		t.Log(json.ToJsonIgnoreError(r))
+		assertEqual(t, r.Suc, true)
 	}
 }

@@ -1,4 +1,4 @@
-package proxy
+package lark
 
 import (
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
@@ -35,8 +35,10 @@ func (l *larkProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessT
 		return resp.GetTenantAccessTokenResp{Resp: resp.Resp{Code: tenantTokenResp.Code, Msg: tenantTokenResp.Msg}}
 	}
 	return resp.GetTenantAccessTokenResp{
-		Resp:   resp.SucResp(),
-		Token:  tenantTokenResp.TenantAccessToken,
-		Expire: tenantTokenResp.Expire,
+		Resp: resp.SucResp(),
+		Data: resp.GetTenantAccessTokenRespData{
+			Token:  tenantTokenResp.TenantAccessToken,
+			Expire: tenantTokenResp.Expire,
+		},
 	}
 }
