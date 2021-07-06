@@ -89,3 +89,11 @@ func (c *caller) GetDeptIds(req req.GetDeptIdsReq) resp.GetDeptIdsResp {
 	}
 	return c.p.GetDeptIds(ctx, req)
 }
+
+func (c *caller) GetDepts(req req.GetDeptsReq) resp.GetDeptsResp {
+	ctx, err := c.context()
+	if err != nil {
+		return resp.GetDeptsResp{Resp: resp.ErrResp(err)}
+	}
+	return c.p.GetDepts(ctx, req)
+}

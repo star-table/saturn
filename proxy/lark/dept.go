@@ -61,3 +61,66 @@ func (l *larkProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp
 		Data: deptIds,
 	}
 }
+
+func (l *larkProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.GetDeptsResp {
+	client := sdk.Tenant{
+		TenantAccessToken: ctx.TenantAccessToken,
+	}
+
+	deptIdContains := map[string]bool{}
+	depts := make([]resp.Dept, 0)
+	q := queue.New()
+	q.Push("0")
+	if req.ParentId != "" {
+		q.Clear()
+		q.Push(req.ParentId)
+	}
+	for {
+		obj, err := q.Pop()
+		if err != nil {
+			break
+		}
+		parentId := obj.(string)
+
+		hasMore := true
+		pageToken := ""
+		for hasMore {
+			deptSimpleInfoResp, err := client.GetDepartmentSimpleListV2(parentId, pageToken, 100, false)
+			if err != nil {
+				log.Println(err)
+				break
+			}
+			if deptSimpleInfoResp.Code != 0 {
+				log.Println(deptSimpleInfoResp.Code, deptSimpleInfoResp.Msg)
+				break
+			}
+			hasMore = deptSimpleInfoResp.Data.HasMore
+			pageToken = deptSimpleInfoResp.Data.PageToken
+			for _, deptInfo := range deptSimpleInfoResp.Data.DepartmentInfos {
+				if !deptIdContains[deptInfo.Id] {
+					deptIdContains[deptInfo.Id] = true
+					depts = append(depts, resp.Dept{
+						Name:         deptInfo.Name,
+						ID:           deptInfo.Id,
+						ParentID:     deptInfo.ParentId,
+						OpenID:       deptInfo.OpenDepartmentID,
+						ParentOpenID: deptInfo.ParentOpenDepartmentID,
+					})
+					if req.FetchChild {
+						q.Push(deptInfo.Id)
+					}
+				}
+			}
+		}
+	}
+	deptIds := make([]string, 0)
+	for k, _ := range deptIdContains {
+		deptIds = append(deptIds, k)
+	}
+	return resp.GetDeptsResp{
+		Resp: resp.SucResp(),
+		Data: resp.GetDeptsRespData{
+			Depts: depts,
+		},
+	}
+}
