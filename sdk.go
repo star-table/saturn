@@ -97,3 +97,19 @@ func (c *caller) GetDepts(req req.GetDeptsReq) resp.GetDeptsResp {
 	}
 	return c.p.GetDepts(ctx, req)
 }
+
+func (c *caller) CodeLogin(ctx *context.Context, code string) resp.CodeLoginResp {
+	ctx, err := c.context()
+	if err != nil {
+		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
+	}
+	return c.p.CodeLogin(ctx, code)
+}
+
+func (c *caller) SendMsg(ctx *context.Context, req req.SendMsgReq) resp.SendMsgResp {
+	ctx, err := c.context()
+	if err != nil {
+		return resp.SendMsgResp{Resp: resp.ErrResp(err)}
+	}
+	return c.p.SendMsg(ctx, req)
+}

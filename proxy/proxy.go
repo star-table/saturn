@@ -9,6 +9,8 @@ import (
 type Proxy interface {
 	// GetTenantAccessToken 获取企业认证Token
 	GetTenantAccessToken(tenantKey string) resp.GetTenantAccessTokenResp
+	// CodeLogin code免登
+	CodeLogin(ctx *context.Context, code string) resp.CodeLoginResp
 	// GetUsers 获取用户列表，部门ID未指定时查询所有用户
 	GetUsers(ctx *context.Context, req req.GetUsersReq) resp.GetUsersResp
 	// GetDeptIds 获取部门ID列表，不包含顶级部门及父部门

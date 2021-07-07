@@ -19,7 +19,6 @@ func (l *larkProxy) SendMsg(ctx *context.Context, req req.SendMsgReq) resp.SendM
 	client := sdk.Tenant{
 		TenantAccessToken: ctx.TenantAccessToken,
 	}
-
 	if supportedBatchSendMsgType[req.MsgType] {
 		content := vo.MsgContent{}
 		json.FromJsonIgnoreError(json.ToJsonIgnoreError(req.Msg), &content)
