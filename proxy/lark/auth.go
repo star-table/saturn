@@ -3,7 +3,6 @@ package lark
 import (
 	"errors"
 	"fmt"
-	"gitea.bjx.cloud/allstar/saturn/model/context"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"github.com/galaxy-book/feishu-sdk-golang/core/model/vo"
@@ -11,7 +10,11 @@ import (
 )
 
 func (l *larkProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessTokenResp {
-	appTokenResp, err := sdk.GetAppAccessToken(l.AppId, l.Secret, l.Ticket)
+	ticket, err := l.Ticket()
+	if err != nil {
+		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
+	}
+	appTokenResp, err := sdk.GetAppAccessToken(l.AppId, l.Secret, ticket)
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
 	}
@@ -34,8 +37,12 @@ func (l *larkProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessT
 	}
 }
 
-func (l *larkProxy) CodeLogin(ctx *context.Context, code string) resp.CodeLoginResp {
-	appTokenResp, err := sdk.GetAppAccessToken(l.AppId, l.Secret, l.Ticket)
+func (l *larkProxy) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
+	ticket, err := l.Ticket()
+	if err != nil {
+		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
+	}
+	appTokenResp, err := sdk.GetAppAccessToken(l.AppId, l.Secret, ticket)
 	if err != nil {
 		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
 	}
@@ -43,40 +50,68 @@ func (l *larkProxy) CodeLogin(ctx *context.Context, code string) resp.CodeLoginR
 		return resp.CodeLoginResp{Resp: resp.Resp{Code: appTokenResp.Code, Msg: appTokenResp.Msg}}
 	}
 	respData := resp.CodeLoginRespData{}
-	loginValidateResp, err := sdk.TokenLoginValidate(appTokenResp.AppAccessToken, code)
+	oauthResp, err1 := sdk.GetOauth2AccessToken(vo.OAuth2AccessTokenReqVo{
+		Code:           code,
+		AppId:          l.AppId,
+		AppSecret:      l.Secret,
+		AppAccessToken: appTokenResp.AppAccessToken,
+		GrantType:      "authorization_code",
+	})
 	var respErr error
-	if err != nil {
+	var accessToken = ""
+	if err1 != nil {
 		respErr = err
-	} else if loginValidateResp.Code != 0 {
-		respErr = errors.New(fmt.Sprintln("TokenLoginValidate fail", json.ToJsonIgnoreError(loginValidateResp)))
+	} else if oauthResp.Code != 0 {
+		respErr = errors.New(fmt.Sprintln("GetOauth2AccessToken fail", json.ToJsonIgnoreError(oauthResp)))
 	} else {
-		respData.UserID = loginValidateResp.Data.Uid
-		respData.OpenID = loginValidateResp.Data.OpenId
-		respData.UnionID = loginValidateResp.Data.UnionId
-		respData.TenantKey = loginValidateResp.Data.TenantKey
+		respData.UserID = oauthResp.OpenId
+		respData.OpenID = oauthResp.OpenId
+		respData.UnionID = oauthResp.OpenId
+		respData.TenantKey = oauthResp.TenantKey
+		respData.Avatar = oauthResp.AvatarUrl
+		respData.Name = oauthResp.Name
+		accessToken = oauthResp.AccessToken
 	}
 	if respErr != nil {
-		oauthResp, err1 := sdk.GetOauth2AccessToken(vo.OAuth2AccessTokenReqVo{
-			Code:           code,
-			AppId:          l.AppId,
-			AppSecret:      l.Secret,
-			AppAccessToken: appTokenResp.AppAccessToken,
-			GrantType:      "authorization_code",
-		})
-		if err1 != nil {
-			respErr = err
-		} else if oauthResp.Code != 0 {
-			respErr = errors.New(fmt.Sprintln("GetOauth2AccessToken fail", json.ToJsonIgnoreError(oauthResp)))
+		loginValidateResp, err3 := sdk.TokenLoginValidate(appTokenResp.AppAccessToken, code)
+		if err3 != nil {
+			respErr = err3
+		} else if loginValidateResp.Code != 0 {
+			respErr = errors.New(fmt.Sprintln("TokenLoginValidate fail", json.ToJsonIgnoreError(loginValidateResp)))
 		} else {
-			respData.UserID = oauthResp.OpenId
-			respData.OpenID = oauthResp.OpenId
-			respData.UnionID = oauthResp.OpenId
-			respData.TenantKey = oauthResp.TenantKey
+			respData.UserID = loginValidateResp.Data.Uid
+			respData.OpenID = loginValidateResp.Data.OpenId
+			respData.UnionID = loginValidateResp.Data.UnionId
+			respData.TenantKey = loginValidateResp.Data.TenantKey
+			accessToken = loginValidateResp.Data.AccessToken
 		}
 	}
 	if respErr != nil {
 		return resp.CodeLoginResp{Resp: resp.ErrResp(respErr)}
 	}
+
+	// 获取当前登录用户头像和名字
+	userInfo, err2 := sdk.GetOAuth2UserInfo(accessToken)
+	if err2 != nil {
+		return resp.CodeLoginResp{Resp: resp.ErrResp(err2)}
+	}
+	respData.Name = userInfo.Name
+	respData.Avatar = userInfo.AvatarUrl
+
+	// 获取当前登录用户部门, 这个接口不需要通讯录权限
+	tenantAccessTokenResp := l.GetTenantAccessToken(respData.TenantKey)
+	if !tenantAccessTokenResp.Suc {
+		return resp.CodeLoginResp{Resp: resp.Resp{Code: tenantAccessTokenResp.Code, Msg: tenantAccessTokenResp.Msg}}
+	}
+
+	client := sdk.Tenant{
+		TenantAccessToken: tenantAccessTokenResp.Data.Token,
+	}
+	userBatchResp, err := client.GetUserBatchGetV2(nil, []string{respData.OpenID})
+	if err == nil && userBatchResp.Code == 0 && len(userBatchResp.Data.Users) > 0 {
+		respData.DeptIds = userBatchResp.Data.Users[0].Departments
+	}
+
 	return resp.CodeLoginResp{
 		Resp: resp.SucResp(),
 		Data: respData,

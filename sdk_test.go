@@ -31,26 +31,30 @@ func assertEqual(t *testing.T, val interface{}, want interface{}) {
 	}
 }
 
-func NewTestSDK() *sdk {
+func NewTestTenant() *SDK {
 	s := New()
-	s.RegistryPlatform(ding, ding2.NewDingProxy(36342, "suiteocpiljyoalvbhrbi", "d1XKtyVpocDrOVJrDqPfqysmLGX7pinWS7iA8l5T7OWPd8aWZWNRfXEJrHoyb5Ng", "", "12345645615313", "1234567890123456789012345678901234567890123"))
-	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", "fa5140497af97fab6b768ea212f0a2ec4e0eff62"))
+	s.RegistryPlatform(ding, ding2.NewDingProxy(36342, "suiteocpiljyoalvbhrbi", "d1XKtyVpocDrOVJrDqPfqysmLGX7pinWS7iA8l5T7OWPd8aWZWNRfXEJrHoyb5Ng", "12345645615313", "1234567890123456789012345678901234567890123", func() (string, error) {
+		return "", nil
+	}))
+	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", func() (string, error) {
+		return "fa5140497af97fab6b768ea212f0a2ec4e0eff62", nil
+	}))
 	return s
 }
 
-func TestSdk_GetCaller(t *testing.T) {
-	s := NewTestSDK()
+func TestTenant_GetTenant(t *testing.T) {
+	s := NewTestTenant()
 	for _, testcase := range testcases {
-		_, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		_, err := s.GetTenant(testcase.platform, testcase.tenantKey)
 		assertEqual(t, err, nil)
 	}
 }
 
 func TestCaller_GetUsers(t *testing.T) {
-	s := NewTestSDK()
+	s := NewTestTenant()
 	for _, testcase := range testcases {
 		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
-		cer, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		cer, err := s.GetTenant(testcase.platform, testcase.tenantKey)
 		assertEqual(t, err, nil)
 		r := cer.GetUsers(req.GetUsersReq{})
 		t.Log(json.ToJsonIgnoreError(r))
@@ -59,10 +63,10 @@ func TestCaller_GetUsers(t *testing.T) {
 }
 
 func TestCaller_GetDeptIds(t *testing.T) {
-	s := NewTestSDK()
+	s := NewTestTenant()
 	for _, testcase := range testcases {
 		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
-		cer, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		cer, err := s.GetTenant(testcase.platform, testcase.tenantKey)
 		assertEqual(t, err, nil)
 		r := cer.GetDeptIds(req.GetDeptIdsReq{})
 		t.Log(json.ToJsonIgnoreError(r))
@@ -71,10 +75,10 @@ func TestCaller_GetDeptIds(t *testing.T) {
 }
 
 func TestCaller_GetDepts(t *testing.T) {
-	s := NewTestSDK()
+	s := NewTestTenant()
 	for _, testcase := range testcases {
 		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
-		cer, err := s.GetCaller(testcase.platform, testcase.tenantKey)
+		cer, err := s.GetTenant(testcase.platform, testcase.tenantKey)
 		assertEqual(t, err, nil)
 		r := cer.GetDepts(req.GetDeptsReq{})
 		t.Log(json.ToJsonIgnoreError(r))

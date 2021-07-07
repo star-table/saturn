@@ -18,8 +18,11 @@ type CodeLoginResp struct {
 }
 
 type CodeLoginRespData struct {
-	UserID    string `json:"userId"`
-	UnionID   string `json:"unionId"`
-	OpenID    string `json:"openId"`
-	TenantKey string `json:"tenantKey"`
+	UserID    string   `json:"userId"`
+	UnionID   string   `json:"unionId"`
+	OpenID    string   `json:"openId"`
+	Name      string   `json:"name"`
+	Avatar    string   `json:"avatar"`
+	TenantKey string   `json:"tenantKey"`
+	DeptIds   []string `json:"deptIds"`
 }

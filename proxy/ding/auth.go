@@ -1,9 +1,17 @@
 package ding
 
 import (
-	"gitea.bjx.cloud/allstar/saturn/model/context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"fmt"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
+	"gitea.bjx.cloud/allstar/saturn/util/http"
+	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
+	"net/url"
+	"strconv"
+	"time"
 )
 
 func (d *dingProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessTokenResp {
@@ -14,7 +22,11 @@ func (d *dingProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessT
 		AesKey:      d.AesKey,
 		AppId:       d.AppId,
 	}
-	corp := dingTalkSDK.CreateCorp(tenantKey, d.Ticket)
+	ticket, err := d.Ticket()
+	if err != nil {
+		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
+	}
+	corp := dingTalkSDK.CreateCorp(tenantKey, ticket)
 	tokenInfo, err := corp.GetCorpToken()
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
@@ -50,31 +62,64 @@ func (d *dingProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessT
 	}
 }
 
-func (d *dingProxy) CodeLogin(ctx *context.Context, code string) resp.CodeLoginResp {
-	client := &sdk.DingTalkClient{
-		AccessToken: ctx.TenantAccessToken,
-		AgentId:     d.AgentId,
+func (d *dingProxy) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
+	timestamp := time.Now().Nanosecond() / 1e6
+	queries := map[string]interface{}{
+		"accessKey": d.SuiteKey,
+		"timestamp": timestamp,
+		"signature": signature(timestamp, d.SuiteSecret),
 	}
-	userInfoResp, err := client.GetUserInfoFromThird(code)
+	requestBody := map[string]interface{}{
+		"tmp_auth_code": code,
+	}
+	userInfoByCodeRespData, err := http.Post("https://oapi.dingtalk.com/sns/getuserinfo_bycode", queries, json.ToJsonIgnoreError(requestBody))
 	if err != nil {
 		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
 	}
-	if userInfoResp.ErrCode != 0 {
-		return resp.CodeLoginResp{Resp: resp.Resp{Code: userInfoResp.ErrCode, Msg: userInfoResp.ErrMsg}}
+	userInfoByCodeResp := sdk.GetUserInfoByCodeResp{}
+	json.FromJsonIgnoreError(userInfoByCodeRespData, &userInfoByCodeResp)
+	if userInfoByCodeResp.ErrCode != 0 {
+		return resp.CodeLoginResp{Resp: resp.Resp{Code: userInfoByCodeResp.ErrCode, Msg: userInfoByCodeResp.ErrMsg}}
 	}
-	userDetailResp, err := client.GetUserDetail(userInfoResp.UserId, nil)
-	if err != nil {
-		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
+
+	respData := resp.CodeLoginRespData{
+		UserID:  userInfoByCodeResp.UserInfo.OpenId,
+		UnionID: userInfoByCodeResp.UserInfo.UnionId,
+		OpenID:  userInfoByCodeResp.UserInfo.OpenId,
+		Name:    userInfoByCodeResp.UserInfo.Nick,
 	}
-	if userDetailResp.ErrCode != 0 {
-		return resp.CodeLoginResp{Resp: resp.Resp{Code: userDetailResp.ErrCode, Msg: userDetailResp.ErrMsg}}
+
+	if tenantKey != "" {
+		tenantAccessTokenResp := d.GetTenantAccessToken(tenantKey)
+		if tenantAccessTokenResp.Suc {
+			client := &sdk.DingTalkClient{
+				AccessToken: tenantAccessTokenResp.Data.Token,
+				AgentId:     d.AgentId,
+			}
+			// 需要测试是否需要转换
+			userIdResp, err := client.GetUserIdByUnionId(userInfoByCodeResp.UserInfo.UnionId)
+			if err == nil && userIdResp.ErrCode == 0 {
+				userDetailResp, err := client.GetUserDetail(userIdResp.UserId, nil)
+				if err == nil && userDetailResp.ErrCode == 0 {
+					deptIds := make([]string, 0)
+					for _, deptId := range userDetailResp.Department {
+						deptIds = append(deptIds, strconv.FormatInt(deptId, 10))
+					}
+					respData.Name = userDetailResp.Name
+					respData.Avatar = userDetailResp.Avatar
+					respData.DeptIds = deptIds
+				}
+			}
+		}
 	}
 	return resp.CodeLoginResp{
 		Resp: resp.SucResp(),
-		Data: resp.CodeLoginRespData{
-			UserID:  userInfoResp.UserId,
-			UnionID: userDetailResp.UnionId,
-			OpenID:  userDetailResp.UnionId,
-		},
+		Data: respData,
 	}
+}
+
+func signature(timestamp int, secret string) string {
+	h := hmac.New(sha256.New, []byte(secret))
+	h.Write([]byte(fmt.Sprintf("%v", timestamp)))
+	return url.QueryEscape(base64.StdEncoding.EncodeToString(h.Sum(nil)))
 }

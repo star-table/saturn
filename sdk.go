@@ -13,26 +13,33 @@ var (
 	PlatformNotRegistryError = errors.New("platform not registry. ")
 )
 
-type sdk struct {
+type SDK struct {
 	platforms map[string]proxy.Proxy
 }
 
-type caller struct {
-	s *sdk
+type Tenant struct {
+	s *SDK
 	c *context.Context
 	p proxy.Proxy
 }
 
-func New() *sdk {
-	s := &sdk{platforms: map[string]proxy.Proxy{}}
+type App struct {
+	s         *SDK
+	p         proxy.Proxy
+	appKey    string
+	appSecret string
+}
+
+func New() *SDK {
+	s := &SDK{platforms: map[string]proxy.Proxy{}}
 	return s
 }
 
-func (s *sdk) RegistryPlatform(platform string, p proxy.Proxy) {
+func (s *SDK) RegistryPlatform(platform string, p proxy.Proxy) {
 	s.platforms[platform] = p
 }
 
-func (s *sdk) GetContext(platform string, tenantKey string) (*context.Context, proxy.Proxy, error) {
+func (s *SDK) GetContext(platform string, tenantKey string) (*context.Context, proxy.Proxy, error) {
 	p, ok := s.platforms[platform]
 	if !ok {
 		return nil, nil, PlatformNotRegistryError
@@ -50,19 +57,30 @@ func (s *sdk) GetContext(platform string, tenantKey string) (*context.Context, p
 	}, p, nil
 }
 
-func (s *sdk) GetCaller(platform string, tenantKey string) (*caller, error) {
+func (s *SDK) GetTenant(platform string, tenantKey string) (*Tenant, error) {
 	c, p, err := s.GetContext(platform, tenantKey)
 	if err != nil {
 		return nil, err
 	}
-	return &caller{
+	return &Tenant{
 		s: s,
 		c: c,
 		p: p,
 	}, nil
 }
 
-func (c *caller) context() (*context.Context, error) {
+func (s *SDK) GetApp(platform string) (*App, error) {
+	p, ok := s.platforms[platform]
+	if !ok {
+		return nil, PlatformNotRegistryError
+	}
+	return &App{
+		s: s,
+		p: p,
+	}, nil
+}
+
+func (c *Tenant) context() (*context.Context, error) {
 	if c.c.Valid() {
 		return c.c, nil
 	}
@@ -74,7 +92,7 @@ func (c *caller) context() (*context.Context, error) {
 	return c.c, nil
 }
 
-func (c *caller) GetUsers(req req.GetUsersReq) resp.GetUsersResp {
+func (c *Tenant) GetUsers(req req.GetUsersReq) resp.GetUsersResp {
 	ctx, err := c.context()
 	if err != nil {
 		return resp.GetUsersResp{Resp: resp.ErrResp(err)}
@@ -82,7 +100,7 @@ func (c *caller) GetUsers(req req.GetUsersReq) resp.GetUsersResp {
 	return c.p.GetUsers(ctx, req)
 }
 
-func (c *caller) GetDeptIds(req req.GetDeptIdsReq) resp.GetDeptIdsResp {
+func (c *Tenant) GetDeptIds(req req.GetDeptIdsReq) resp.GetDeptIdsResp {
 	ctx, err := c.context()
 	if err != nil {
 		return resp.GetDeptIdsResp{Resp: resp.ErrResp(err)}
@@ -90,7 +108,7 @@ func (c *caller) GetDeptIds(req req.GetDeptIdsReq) resp.GetDeptIdsResp {
 	return c.p.GetDeptIds(ctx, req)
 }
 
-func (c *caller) GetDepts(req req.GetDeptsReq) resp.GetDeptsResp {
+func (c *Tenant) GetDepts(req req.GetDeptsReq) resp.GetDeptsResp {
 	ctx, err := c.context()
 	if err != nil {
 		return resp.GetDeptsResp{Resp: resp.ErrResp(err)}
@@ -98,18 +116,14 @@ func (c *caller) GetDepts(req req.GetDeptsReq) resp.GetDeptsResp {
 	return c.p.GetDepts(ctx, req)
 }
 
-func (c *caller) CodeLogin(ctx *context.Context, code string) resp.CodeLoginResp {
-	ctx, err := c.context()
-	if err != nil {
-		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
-	}
-	return c.p.CodeLogin(ctx, code)
-}
-
-func (c *caller) SendMsg(ctx *context.Context, req req.SendMsgReq) resp.SendMsgResp {
+func (c *Tenant) SendMsg(req req.SendMsgReq) resp.SendMsgResp {
 	ctx, err := c.context()
 	if err != nil {
 		return resp.SendMsgResp{Resp: resp.ErrResp(err)}
 	}
 	return c.p.SendMsg(ctx, req)
+}
+
+func (c *App) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
+	return c.p.CodeLogin(tenantKey, code)
 }

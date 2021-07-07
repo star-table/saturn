@@ -1,12 +1,14 @@
 package lark
 
+import "gitea.bjx.cloud/allstar/saturn/proxy"
+
 type larkProxy struct {
 	AppId  string
 	Secret string
-	Ticket string
+	Ticket proxy.Ticket
 }
 
-func NewLarkProxy(appId, secret, ticket string) *larkProxy {
+func NewLarkProxy(appId, secret string, ticket proxy.Ticket) *larkProxy {
 	return &larkProxy{
 		AppId:  appId,
 		Secret: secret,
