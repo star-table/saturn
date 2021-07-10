@@ -29,13 +29,16 @@ func (l *larkProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 		}
 		deptIds = append(deptIds, allDeptIdsResp.Data...)
 	}
-
+	limit := 9999999
+	if r.Limit > 0 {
+		limit = r.Limit
+	}
 	userList := make([]resp.User, 0)
 	userContains := map[string]bool{}
 	for _, deptId := range deptIds {
 		hasMore := true
 		pageToken := ""
-		for hasMore {
+		for hasMore && (limit > len(userList)) {
 			deptUserListResp, err := client.GetUsersV3("", "", deptId, pageToken, 100)
 			if err != nil {
 				log.Println(err)
@@ -55,6 +58,9 @@ func (l *larkProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 					userContains[respUser.OpenID] = true
 				}
 			}
+		}
+		if limit <= len(userList) {
+			break
 		}
 	}
 	return resp.GetUsersResp{

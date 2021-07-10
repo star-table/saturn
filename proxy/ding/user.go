@@ -30,13 +30,17 @@ func (d *dingProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 		}
 		deptIds = append(deptIds, allDeptIdsResp.Data...)
 	}
+	limit := 9999999
+	if r.Limit > 0 {
+		limit = r.Limit
+	}
 	userList := make([]resp.User, 0)
 	userContains := map[string]bool{}
 	for _, deptIdStr := range deptIds {
 		hasMore := true
 		var cursor int64 = 0
 		deptId, _ := strconv.ParseInt(deptIdStr, 10, 64)
-		for hasMore {
+		for hasMore && (limit > len(userList)) {
 			deptUserListResp, err := client.GetDeptUserListV2(deptId, cursor, 100, "", nil, "")
 			if err != nil {
 				log.Println(err)
@@ -56,6 +60,9 @@ func (d *dingProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 					userContains[respUser.OpenID] = true
 				}
 			}
+		}
+		if limit <= len(userList) {
+			break
 		}
 	}
 	return resp.GetUsersResp{
