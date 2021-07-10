@@ -124,7 +124,7 @@ func (c *Tenant) SendMsg(req req.SendMsgReq) resp.SendMsgResp {
 	return c.p.SendMsg(ctx, req)
 }
 
-func (c *Tenant) GetRootDept(ctx *context.Context) resp.GetRootDeptResp {
+func (c *Tenant) GetRootDept() resp.GetRootDeptResp {
 	ctx, err := c.context()
 	if err != nil {
 		return resp.GetRootDeptResp{Resp: resp.ErrResp(err)}
