@@ -80,6 +80,7 @@ func convertUsers(users []vo.UserDetailInfoV3) []resp.User {
 			EnName:  user.EnName,
 			Email:   user.Email,
 			Mobile:  user.Mobile,
+			IsAdmin: user.IsTenantManager,
 			Avatar: resp.Avatar{
 				Avatar72:     user.Avatar.Avatar72,
 				Avatar240:    user.Avatar.Avatar240,

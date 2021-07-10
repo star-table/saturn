@@ -19,6 +19,7 @@ type User struct {
 	Email         string   `json:"email"`
 	Mobile        string   `json:"mobile"`
 	Avatar        Avatar   `json:"avatar"`
+	IsAdmin       bool     `json:"isAdmin"`
 	DepartmentIds []string `json:"departmentIds"`
 }
 

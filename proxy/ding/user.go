@@ -81,6 +81,7 @@ func convertUsers(users []sdk.UserDetailInfoV2) []resp.User {
 			EnName:  user.Name,
 			Email:   user.Email,
 			Mobile:  user.Mobile,
+			IsAdmin: user.Admin,
 			Avatar: resp.Avatar{
 				Avatar72:     user.Avatar,
 				Avatar240:    user.Avatar,
