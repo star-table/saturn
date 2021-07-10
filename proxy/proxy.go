@@ -17,6 +17,8 @@ type Proxy interface {
 	GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp.GetDeptIdsResp
 	// GetDepts 获取部门列表
 	GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.GetDeptsResp
+	// GetRootDept 获取跟部门
+	GetRootDept(ctx *context.Context) resp.GetRootDeptResp
 	// SendMsg 发送消息，数据结构各自实现
 	SendMsg(ctx *context.Context, req req.SendMsgReq) resp.SendMsgResp
 }

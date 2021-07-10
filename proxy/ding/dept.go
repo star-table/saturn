@@ -114,3 +114,28 @@ func (d *dingProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.Get
 		},
 	}
 }
+
+func (d *dingProxy) GetRootDept(ctx *context.Context) resp.GetRootDeptResp {
+	client := &sdk.DingTalkClient{
+		AccessToken: ctx.TenantAccessToken,
+		AgentId:     d.AgentId,
+	}
+	deptDetailResp, err := client.GetDeptDetail("1", nil)
+	if err != nil {
+		return resp.GetRootDeptResp{Resp: resp.ErrResp(err)}
+	}
+	if deptDetailResp.ErrCode != 0 {
+		return resp.GetRootDeptResp{Resp: resp.Resp{Code: deptDetailResp.ErrCode, Msg: deptDetailResp.ErrMsg}}
+	}
+	dept := resp.Dept{
+		Name:     deptDetailResp.Name,
+		ID:       strconv.FormatInt(deptDetailResp.Id, 10),
+		ParentID: strconv.FormatInt(deptDetailResp.ParentId, 10),
+	}
+	dept.OpenID = dept.ID
+	dept.ParentOpenID = dept.ParentID
+	return resp.GetRootDeptResp{
+		Resp: resp.SucResp(),
+		Data: dept,
+	}
+}

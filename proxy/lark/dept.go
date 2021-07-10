@@ -124,3 +124,16 @@ func (l *larkProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.Get
 		},
 	}
 }
+
+func (l *larkProxy) GetRootDept(ctx *context.Context) resp.GetRootDeptResp {
+	return resp.GetRootDeptResp{
+		Resp: resp.SucResp(),
+		Data: resp.Dept{
+			Name:         "飞书企业",
+			ID:           "0",
+			OpenID:       "0",
+			ParentID:     "0",
+			ParentOpenID: "0",
+		},
+	}
+}

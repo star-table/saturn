@@ -16,6 +16,12 @@ type GetDeptsRespData struct {
 	Depts []Dept `json:"depts"`
 }
 
+type GetRootDeptResp struct {
+	Resp
+
+	Data Dept `json:"data"`
+}
+
 type Dept struct {
 	Name         string `json:"name"`
 	ID           string `json:"id"`
