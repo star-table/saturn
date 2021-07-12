@@ -13,6 +13,8 @@ type Proxy interface {
 	CodeLogin(tenantKey, code string) resp.CodeLoginResp
 	// GetUsers 获取用户列表，部门ID未指定时查询所有用户
 	GetUsers(ctx *context.Context, req req.GetUsersReq) resp.GetUsersResp
+	// GetUser 获取用户信息
+	GetUser(ctx *context.Context, id string) resp.GetUserResp
 	// GetDeptIds 获取部门ID列表，不包含顶级部门及父部门
 	GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp.GetDeptIdsResp
 	// GetDepts 获取部门列表

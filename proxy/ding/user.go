@@ -73,6 +73,43 @@ func (d *dingProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 	}
 }
 
+func (d *dingProxy) GetUser(ctx *context.Context, id string) resp.GetUserResp {
+	client := &sdk.DingTalkClient{
+		AccessToken: ctx.TenantAccessToken,
+		AgentId:     d.AgentId,
+	}
+	userDetailResp, err := client.GetUserDetail(id, nil)
+	if err != nil {
+		return resp.GetUserResp{Resp: resp.ErrResp(err)}
+	}
+	if userDetailResp.ErrCode != 0 {
+		return resp.GetUserResp{Resp: resp.Resp{Code: userDetailResp.ErrCode, Msg: userDetailResp.ErrMsg}}
+	}
+	user := userDetailResp.UserList
+	deptIdList := make([]string, 0)
+	for _, deptId := range user.Department {
+		deptIdList = append(deptIdList, strconv.FormatInt(deptId, 10))
+	}
+	return resp.GetUserResp{
+		Resp: resp.SucResp(),
+		Data: resp.User{
+			OpenID:  user.UnionId,
+			UserID:  user.UserId,
+			UnionID: user.UnionId,
+			Name:    user.Name,
+			EnName:  user.Name,
+			IsAdmin: user.IsAdmin,
+			Avatar: resp.Avatar{
+				Avatar72:     user.Avatar,
+				Avatar240:    user.Avatar,
+				Avatar640:    user.Avatar,
+				AvatarOrigin: user.Avatar,
+			},
+			DepartmentIds: deptIdList,
+		},
+	}
+}
+
 func convertUsers(users []sdk.UserDetailInfoV2) []resp.User {
 	respUsers := make([]resp.User, len(users))
 	for i, user := range users {

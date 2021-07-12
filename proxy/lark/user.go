@@ -71,6 +71,43 @@ func (l *larkProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUs
 	}
 }
 
+func (l *larkProxy) GetUser(ctx *context.Context, id string) resp.GetUserResp {
+	client := sdk.Tenant{
+		TenantAccessToken: ctx.TenantAccessToken,
+	}
+	userBatchResp, err := client.GetUserBatchGetV2(nil, []string{id})
+	if err != nil {
+		return resp.GetUserResp{Resp: resp.ErrResp(err)}
+	}
+	if userBatchResp.Code != 0 {
+		return resp.GetUserResp{Resp: resp.Resp{Code: userBatchResp.Code, Msg: userBatchResp.Msg}}
+	}
+	if len(userBatchResp.Data.Users) == 0 {
+		return resp.GetUserResp{Resp: resp.Resp{Code: -1, Msg: "user not exist"}}
+	}
+	user := userBatchResp.Data.Users[0]
+	return resp.GetUserResp{
+		Resp: resp.SucResp(),
+		Data: resp.User{
+			OpenID:  user.OpenId,
+			UserID:  user.UserId,
+			UnionID: user.UnionId,
+			Name:    user.Name,
+			EnName:  user.EnName,
+			Email:   user.Email,
+			Mobile:  user.Mobile,
+			IsAdmin: user.IsTenantManager,
+			Avatar: resp.Avatar{
+				Avatar72:     user.Avatar.Avatar72,
+				Avatar240:    user.Avatar.Avatar240,
+				Avatar640:    user.Avatar.Avatar640,
+				AvatarOrigin: user.Avatar.AvatarOrigin,
+			},
+			DepartmentIds: user.Departments,
+		},
+	}
+}
+
 func convertUsers(users []vo.UserDetailInfoV3) []resp.User {
 	respUsers := make([]resp.User, len(users))
 	for i, user := range users {

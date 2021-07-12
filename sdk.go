@@ -132,6 +132,14 @@ func (c *Tenant) GetRootDept() resp.GetRootDeptResp {
 	return c.p.GetRootDept(ctx)
 }
 
+func (c *Tenant) GetUser(id string) resp.GetUserResp {
+	ctx, err := c.context()
+	if err != nil {
+		return resp.GetUserResp{Resp: resp.ErrResp(err)}
+	}
+	return c.p.GetUser(ctx, id)
+}
+
 func (c *App) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
 	return c.p.CodeLogin(tenantKey, code)
 }

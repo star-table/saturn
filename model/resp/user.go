@@ -10,6 +10,12 @@ type GetUsersRespData struct {
 	Users []User `json:"users"`
 }
 
+type GetUserResp struct {
+	Resp
+
+	Data User `json:"data"`
+}
+
 type User struct {
 	OpenID        string   `json:"openId"`
 	UserID        string   `json:"userId"`
