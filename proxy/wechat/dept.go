@@ -4,52 +4,29 @@ import (
 	"gitea.bjx.cloud/allstar/saturn/model/context"
 	"gitea.bjx.cloud/allstar/saturn/model/req"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
-	"gitea.bjx.cloud/allstar/saturn/util/queue"
-	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
-	"log"
+	"gitea.bjx.cloud/allstar/saturn/util/json"
+	"github.com/LLLjjjjjj/work-wechat"
 	"strconv"
 )
 
-func (d *dingProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp.GetDeptIdsResp {
-	client := &sdk.DingTalkClient{
-		AccessToken: ctx.TenantAccessToken,
-		AgentId:     d.AgentId,
+func (w *wechatProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp.GetDeptIdsResp {
+	action := work.GetDeptList(ctx.TenantAccessToken, req.ParentId)
+	respBody, err := action.GetRequestBody()
+	if err != nil {
+		return resp.GetDeptIdsResp{Resp: resp.ErrResp(err)}
 	}
-	deptIdContains := map[string]bool{}
-	q := queue.New()
-	q.Push("1")
+	deptListResp := work.GetDeptListResp{}
+	json.FromJsonIgnoreError(string(respBody), &deptListResp)
+
+	parentId := 0
 	if req.ParentId != "" {
-		q.Clear()
-		q.Push(req.ParentId)
-	}
-	for {
-		obj, err := q.Pop()
-		if err != nil {
-			break
-		}
-		parentId := obj.(string)
-		subIdsResp, err := client.GetSubDept(parentId)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if subIdsResp.ErrCode != 0 {
-			log.Println(subIdsResp.ErrCode, subIdsResp.ErrMsg)
-			continue
-		}
-		for _, subId := range subIdsResp.SubDeptIdList {
-			deptStrId := strconv.FormatInt(subId, 10)
-			if !deptIdContains[deptStrId] {
-				deptIdContains[deptStrId] = true
-				if req.FetchChild {
-					q.Push(deptStrId)
-				}
-			}
-		}
+		parentId, _ = strconv.Atoi(req.ParentId)
 	}
 	deptIds := make([]string, 0)
-	for k, _ := range deptIdContains {
-		deptIds = append(deptIds, k)
+	for _, dept := range deptListResp.Department {
+		if dept.ID != parentId {
+			deptIds = append(deptIds, strconv.Itoa(dept.ID))
+		}
 	}
 	return resp.GetDeptIdsResp{
 		Resp: resp.SucResp(),
@@ -57,55 +34,32 @@ func (d *dingProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp
 	}
 }
 
-func (d *dingProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.GetDeptsResp {
-	client := &sdk.DingTalkClient{
-		AccessToken: ctx.TenantAccessToken,
-		AgentId:     d.AgentId,
+func (w *wechatProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.GetDeptsResp {
+	action := work.GetDeptList(ctx.TenantAccessToken, req.ParentId)
+	respBody, err := action.GetRequestBody()
+	if err != nil {
+		return resp.GetDeptsResp{Resp: resp.ErrResp(err)}
+	}
+	deptListResp := work.GetDeptListResp{}
+	json.FromJsonIgnoreError(string(respBody), &deptListResp)
+
+	parentId := 0
+	if req.ParentId != "" {
+		parentId, _ = strconv.Atoi(req.ParentId)
 	}
 	depts := make([]resp.Dept, 0)
-	deptIdContains := map[string]bool{}
-	q := queue.New()
-	q.Push("1")
-	if req.ParentId != "" {
-		q.Clear()
-		q.Push(req.ParentId)
-	}
-	for {
-		obj, err := q.Pop()
-		if err != nil {
-			break
+	for _, dept := range deptListResp.Department {
+		if dept.ID != parentId {
+			deptId := strconv.Itoa(dept.ID)
+			deptParentId := strconv.Itoa(dept.ParentId)
+			depts = append(depts, resp.Dept{
+				Name:         dept.Name,
+				ID:           deptId,
+				OpenID:       deptId,
+				ParentID:     deptParentId,
+				ParentOpenID: deptParentId,
+			})
 		}
-		parentId := obj.(string)
-		subDepts, err := client.GetDeptList(nil, false, parentId)
-		if err != nil {
-			log.Println(err)
-			continue
-		}
-		if subDepts.ErrCode != 0 {
-			log.Println(subDepts.ErrCode, subDepts.ErrMsg)
-			continue
-		}
-		for _, subDept := range subDepts.Department {
-			deptStrId := strconv.FormatInt(subDept.Id, 10)
-			if !deptIdContains[deptStrId] {
-				deptIdContains[deptStrId] = true
-				dept := resp.Dept{
-					Name:     subDept.Name,
-					ID:       strconv.FormatInt(subDept.Id, 10),
-					ParentID: strconv.FormatInt(subDept.ParentId, 10),
-				}
-				dept.OpenID = dept.ID
-				dept.ParentOpenID = dept.ParentID
-				depts = append(depts, dept)
-				if req.FetchChild {
-					q.Push(deptStrId)
-				}
-			}
-		}
-	}
-	deptIds := make([]string, 0)
-	for k, _ := range deptIdContains {
-		deptIds = append(deptIds, k)
 	}
 	return resp.GetDeptsResp{
 		Resp: resp.SucResp(),
@@ -115,27 +69,15 @@ func (d *dingProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.Get
 	}
 }
 
-func (d *dingProxy) GetRootDept(ctx *context.Context) resp.GetRootDeptResp {
-	client := &sdk.DingTalkClient{
-		AccessToken: ctx.TenantAccessToken,
-		AgentId:     d.AgentId,
-	}
-	deptDetailResp, err := client.GetDeptDetail("1", nil)
-	if err != nil {
-		return resp.GetRootDeptResp{Resp: resp.ErrResp(err)}
-	}
-	if deptDetailResp.ErrCode != 0 {
-		return resp.GetRootDeptResp{Resp: resp.Resp{Code: deptDetailResp.ErrCode, Msg: deptDetailResp.ErrMsg}}
-	}
-	dept := resp.Dept{
-		Name:     deptDetailResp.Name,
-		ID:       strconv.FormatInt(deptDetailResp.Id, 10),
-		ParentID: strconv.FormatInt(deptDetailResp.ParentId, 10),
-	}
-	dept.OpenID = dept.ID
-	dept.ParentOpenID = dept.ParentID
+func (w *wechatProxy) GetRootDept(ctx *context.Context) resp.GetRootDeptResp {
 	return resp.GetRootDeptResp{
 		Resp: resp.SucResp(),
-		Data: dept,
+		Data: resp.Dept{
+			Name:         "微信企业",
+			ID:           "0",
+			OpenID:       "0",
+			ParentID:     "0",
+			ParentOpenID: "0",
+		},
 	}
 }
