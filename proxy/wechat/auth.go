@@ -1,126 +1,124 @@
 package ding
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"encoding/base64"
-	"fmt"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
-	"gitea.bjx.cloud/allstar/saturn/util/http"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
-	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
-	"net/url"
-	"strconv"
-	"time"
+	"github.com/LLLjjjjjj/work-wechat"
+	"strings"
 )
 
-func (w *wechatProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessTokenResp {
+func (w *wechatProxy) createWechatSDK(tenantKey string) (*work.WorkWechat, error) {
+	corpInfos := strings.Split(tenantKey, ":")
+	ticket, err := w.Ticket()
+	if err != nil {
+		return nil, err
+	}
+	wechatSDK := work.NewWorkWechat(work.Config{
+		SuiteID:        w.SuiteID,
+		SuiteSecret:    w.SuiteSecret,
+		SuiteTicket:    ticket,
+		ProviderCorpID: w.ProviderCorpID,
+		ProviderSecret: w.ProviderSecret,
+		CorpId:         corpInfos[0],
+		PermanentCode:  corpInfos[1],
+	})
+	return wechatSDK, nil
+}
 
-	dingTalkSDK := &sdk.DingTalkSDK{
-		SuiteKey:    d.SuiteKey,
-		SuiteSecret: d.SuiteSecret,
-		Token:       d.Token,
-		AesKey:      d.AesKey,
-		AppId:       d.AppId,
-	}
-	ticket, err := d.Ticket()
+func (w *wechatProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessTokenResp {
+	wechatSDK, err := w.createWechatSDK(tenantKey)
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
 	}
-	corp := dingTalkSDK.CreateCorp(tenantKey, ticket)
-	tokenInfo, err := corp.GetCorpToken()
+	corpAccessTokenResp, err := wechatSDK.GetCorpAccessToken()
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
 	}
-	if tokenInfo.ErrCode != 0 {
-		return resp.GetTenantAccessTokenResp{Resp: resp.Resp{Code: tokenInfo.ErrCode, Msg: tokenInfo.ErrMsg}}
-	}
-	authInfo, err := corp.GetAuthInfo()
-	if err != nil {
-		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
-	}
-	if authInfo.ErrCode != 0 {
-		return resp.GetTenantAccessTokenResp{Resp: resp.Resp{Code: authInfo.ErrCode, Msg: authInfo.ErrMsg}}
-	}
-	agents := authInfo.AuthInfo.Agent
-	var targetAgent *sdk.Agent = nil
-	for _, agent := range agents {
-		if agent.AppId == d.AppId {
-			targetAgent = &agent
-			break
-		}
-	}
-	if targetAgent == nil {
-		return resp.GetTenantAccessTokenResp{Resp: resp.Resp{Code: -1, Msg: "target agent is null"}}
-	}
-	d.AgentId = targetAgent.AgentId
 	return resp.GetTenantAccessTokenResp{
 		Resp: resp.SucResp(),
 		Data: resp.GetTenantAccessTokenRespData{
-			Token:  tokenInfo.AccessToken,
-			Expire: tokenInfo.ExpiresIn,
+			Token:  corpAccessTokenResp.AccessToken,
+			Expire: corpAccessTokenResp.ExpiresIn,
 		},
 	}
 }
 
-func (d *dingProxy) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
-	timestamp := time.Now().Nanosecond() / 1e6
-	queries := map[string]interface{}{
-		"accessKey": d.SuiteKey,
-		"timestamp": timestamp,
-		"signature": signature(timestamp, d.SuiteSecret),
+func (w *wechatProxy) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
+	userInfo3rdResp, userDetail3rdResp, err := w.getUserInfo3rd(code)
+	if err == nil {
+		return resp.CodeLoginResp{
+			Resp: resp.SucResp(),
+			Data: resp.CodeLoginRespData{
+				UserID:    userDetail3rdResp.UserId,
+				UnionID:   userInfo3rdResp.OpenUserId,
+				OpenID:    userInfo3rdResp.OpenUserId,
+				Name:      userDetail3rdResp.Name,
+				Avatar:    userDetail3rdResp.Avatar,
+				TenantKey: userInfo3rdResp.CorpId,
+			},
+		}
 	}
-	requestBody := map[string]interface{}{
-		"tmp_auth_code": code,
-	}
-	userInfoByCodeRespData, err := http.Post("https://oapi.dingtalk.com/sns/getuserinfo_bycode", queries, json.ToJsonIgnoreError(requestBody))
+	loginUserInfoResp, err := w.getLoginUserInfo(code)
 	if err != nil {
 		return resp.CodeLoginResp{Resp: resp.ErrResp(err)}
 	}
-	userInfoByCodeResp := sdk.GetUserInfoByCodeResp{}
-	json.FromJsonIgnoreError(userInfoByCodeRespData, &userInfoByCodeResp)
-	if userInfoByCodeResp.ErrCode != 0 {
-		return resp.CodeLoginResp{Resp: resp.Resp{Code: userInfoByCodeResp.ErrCode, Msg: userInfoByCodeResp.ErrMsg}}
-	}
-
-	respData := resp.CodeLoginRespData{
-		UserID:  userInfoByCodeResp.UserInfo.OpenId,
-		UnionID: userInfoByCodeResp.UserInfo.UnionId,
-		OpenID:  userInfoByCodeResp.UserInfo.OpenId,
-		Name:    userInfoByCodeResp.UserInfo.Nick,
-	}
-
-	if tenantKey != "" {
-		tenantAccessTokenResp := d.GetTenantAccessToken(tenantKey)
-		if tenantAccessTokenResp.Suc {
-			client := &sdk.DingTalkClient{
-				AccessToken: tenantAccessTokenResp.Data.Token,
-				AgentId:     d.AgentId,
-			}
-			// 需要测试是否需要转换
-			userIdResp, err := client.GetUserIdByUnionId(userInfoByCodeResp.UserInfo.UnionId)
-			if err == nil && userIdResp.ErrCode == 0 {
-				userDetailResp, err := client.GetUserDetail(userIdResp.UserId, nil)
-				if err == nil && userDetailResp.ErrCode == 0 {
-					deptIds := make([]string, 0)
-					for _, deptId := range userDetailResp.Department {
-						deptIds = append(deptIds, strconv.FormatInt(deptId, 10))
-					}
-					respData.Name = userDetailResp.Name
-					respData.Avatar = userDetailResp.Avatar
-					respData.DeptIds = deptIds
-				}
-			}
-		}
-	}
 	return resp.CodeLoginResp{
 		Resp: resp.SucResp(),
-		Data: respData,
+		Data: resp.CodeLoginRespData{
+			UserID:    loginUserInfoResp.UserInfo.Userid,
+			UnionID:   loginUserInfoResp.UserInfo.OpenUserid,
+			OpenID:    loginUserInfoResp.UserInfo.OpenUserid,
+			Name:      loginUserInfoResp.UserInfo.Name,
+			Avatar:    loginUserInfoResp.UserInfo.Avatar,
+			TenantKey: userInfo3rdResp.CorpId,
+		},
 	}
 }
 
-func signature(timestamp int, secret string) string {
-	h := hmac.New(sha256.New, []byte(secret))
-	h.Write([]byte(fmt.Sprintf("%v", timestamp)))
-	return url.QueryEscape(base64.StdEncoding.EncodeToString(h.Sum(nil)))
+func (w *wechatProxy) getUserInfo3rd(code string) (*work.GetUserInfo3rdResp, *work.GetUserDetail3rdResp, error) {
+	wechatSDK, err := w.createWechatSDK(":")
+	if err != nil {
+		return nil, nil, err
+	}
+	suiteAccessTokenResp, err := wechatSDK.GetSuiteAccessToken()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	action := work.GetUserInfo3RD(suiteAccessTokenResp.SuiteAccessToken, code)
+	respBody, err := action.GetRequestBody()
+	if err != nil {
+		return nil, nil, err
+	}
+	userInfo3rdResp := work.GetUserInfo3rdResp{}
+	json.FromJsonIgnoreError(string(respBody), &userInfo3rdResp)
+
+	action = work.GetUserDetail3RD(suiteAccessTokenResp.SuiteAccessToken, userInfo3rdResp.UserTicket)
+	respBody, err = action.GetRequestBody()
+	if err != nil {
+		return nil, nil, err
+	}
+	userDetail3rdResp := work.GetUserDetail3rdResp{}
+	json.FromJsonIgnoreError(string(respBody), &userDetail3rdResp)
+
+	return &userInfo3rdResp, &userDetail3rdResp, nil
+}
+
+func (w *wechatProxy) getLoginUserInfo(code string) (*work.GetLoginInfoResp, error) {
+	wechatSDK, err := w.createWechatSDK(":")
+	if err != nil {
+		return nil, err
+	}
+	providerAccessTokenResp, err := wechatSDK.GetProviderAccessToken()
+	if err != nil {
+		return nil, err
+	}
+	action := work.GetLoginInfo(providerAccessTokenResp.ProviderAccessToken, code)
+	respBody, err := action.GetRequestBody()
+	if err != nil {
+		return nil, err
+	}
+	loginUserInfoResp := work.GetLoginInfoResp{}
+	json.FromJsonIgnoreError(string(respBody), &loginUserInfoResp)
+	return &loginUserInfoResp, nil
 }
