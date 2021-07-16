@@ -7,6 +7,7 @@ type wechatProxy struct {
 	ProviderSecret string
 	SuiteID        string
 	SuiteSecret    string
+	AgentId        int64
 	Ticket         proxy.Ticket
 }
 

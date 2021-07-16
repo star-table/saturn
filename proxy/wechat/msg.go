@@ -5,25 +5,33 @@ import (
 	"gitea.bjx.cloud/allstar/saturn/model/req"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
-	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
+	"github.com/LLLjjjjjj/work-wechat"
+	"strings"
 )
 
-func (d *dingProxy) SendMsg(ctx *context.Context, req req.SendMsgReq) resp.SendMsgResp {
-	client := &sdk.DingTalkClient{
-		AccessToken: ctx.TenantAccessToken,
-		AgentId:     d.AgentId,
-	}
-	msg := sdk.WorkNoticeMsg{}
+func (w *wechatProxy) SendMsg(ctx *context.Context, req req.SendMsgReq) resp.SendMsgResp {
+	msg := work.SendMsgReq{}
 	json.FromJsonIgnoreError(json.ToJsonIgnoreError(req.Msg), &msg)
 	msg.MsgType = req.MsgType
-	for _, userId := range req.UserIds {
-		_, _ = client.SendWorkNotice(&userId, nil, false, msg)
+
+	if len(req.OpenIds) > 0 {
+		msg.ToUser = strings.Join(req.OpenIds, "|")
 	}
-	for _, openId := range req.OpenIds {
-		_, _ = client.SendWorkNotice(&openId, nil, false, msg)
+	if len(req.DeptIds) > 0 {
+		msg.ToParty = strings.Join(req.DeptIds, "|")
 	}
-	for _, deptId := range req.DeptIds {
-		_, _ = client.SendWorkNotice(nil, &deptId, false, msg)
+	if len(req.ChatIds) > 0 {
+		msg.ToTag = strings.Join(req.ChatIds, "|")
+	}
+	action := work.SendMsg(ctx.TenantAccessToken, msg)
+	respBody, err := action.GetRequestBody()
+	if err != nil {
+		return resp.SendMsgResp{Resp: resp.ErrResp(err)}
+	}
+	sendMsgResp := work.SendMsgResp{}
+	json.FromJsonIgnoreError(string(respBody), &sendMsgResp)
+	if sendMsgResp.ErrCode != 0 {
+		return resp.SendMsgResp{Resp: resp.Resp{Code: sendMsgResp.ErrCode, Msg: sendMsgResp.ErrMsg}}
 	}
 	return resp.SendMsgResp{Resp: resp.SucResp()}
 }

@@ -30,9 +30,24 @@ func (w *wechatProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAcces
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
 	}
+	suiteAccessTokenResp, err := wechatSDK.GetSuiteAccessToken()
+	if err != nil {
+		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
+	}
+
 	corpAccessTokenResp, err := wechatSDK.GetCorpAccessToken()
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
+	}
+	action := work.GetCorpAuthInfoAction(suiteAccessTokenResp.SuiteAccessToken, wechatSDK.CorpId, wechatSDK.PermanentCode)
+	respBody, err := action.GetRequestBody()
+	if err != nil {
+		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
+	}
+	corpAuthInfoResp := work.GetCorpAuthInfoResp{}
+	json.FromJsonIgnoreError(string(respBody), corpAuthInfoResp)
+	if len(corpAuthInfoResp.AuthInfo.Agent) > 0 {
+		w.AgentId = int64(corpAuthInfoResp.AuthInfo.Agent[0].AgentID)
 	}
 	return resp.GetTenantAccessTokenResp{
 		Resp: resp.SucResp(),

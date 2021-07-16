@@ -6,8 +6,6 @@ import (
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"github.com/LLLjjjjjj/work-wechat"
-	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
-	"log"
 	"strconv"
 )
 
@@ -26,6 +24,9 @@ func (w *wechatProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.Get
 	}
 	deptMemberListResp := work.GetDeptMemberListResp{}
 	json.FromJsonIgnoreError(string(respBody), &deptMemberListResp)
+	if deptMemberListResp.ErrCode != 0 {
+		return resp.GetUsersResp{Resp: resp.Resp{Code: deptMemberListResp.ErrCode, Msg: deptMemberListResp.ErrMsg}}
+	}
 
 	respUsers := make([]resp.User, 0)
 	for _, deptMember := range deptMemberListResp.UserList {
@@ -60,36 +61,36 @@ func (w *wechatProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.Get
 }
 
 func (w *wechatProxy) GetUser(ctx *context.Context, id string) resp.GetUserResp {
-	client := &sdk.DingTalkClient{
-		AccessToken: ctx.TenantAccessToken,
-		AgentId:     d.AgentId,
-	}
-	userDetailResp, err := client.GetUserDetail(id, nil)
+	action := work.GetUserInfoAction(ctx.TenantAccessToken, id)
+	respBody, err := action.GetRequestBody()
 	if err != nil {
 		return resp.GetUserResp{Resp: resp.ErrResp(err)}
 	}
-	if userDetailResp.ErrCode != 0 {
-		return resp.GetUserResp{Resp: resp.Resp{Code: userDetailResp.ErrCode, Msg: userDetailResp.ErrMsg}}
+	userInfoDetailsResp := work.UserInfo{}
+	json.FromJsonIgnoreError(string(respBody), &userInfoDetailsResp)
+	if userInfoDetailsResp.ErrCode != 0 {
+		return resp.GetUserResp{Resp: resp.Resp{Code: userInfoDetailsResp.ErrCode, Msg: userInfoDetailsResp.ErrMsg}}
 	}
-	user := userDetailResp.UserList
 	deptIdList := make([]string, 0)
-	for _, deptId := range user.Department {
-		deptIdList = append(deptIdList, strconv.FormatInt(deptId, 10))
+	for _, deptId := range userInfoDetailsResp.Department {
+		deptIdList = append(deptIdList, strconv.Itoa(deptId))
 	}
 	return resp.GetUserResp{
 		Resp: resp.SucResp(),
 		Data: resp.User{
-			OpenID:  user.UnionId,
-			UserID:  user.UserId,
-			UnionID: user.UnionId,
-			Name:    user.Name,
-			EnName:  user.Name,
-			IsAdmin: user.IsAdmin,
+			OpenID:  userInfoDetailsResp.OpenUserid,
+			UserID:  userInfoDetailsResp.Userid,
+			UnionID: userInfoDetailsResp.OpenUserid,
+			Name:    userInfoDetailsResp.Name,
+			EnName:  userInfoDetailsResp.Name,
+			Email:   userInfoDetailsResp.Email,
+			Mobile:  userInfoDetailsResp.Mobile,
+			IsAdmin: false,
 			Avatar: resp.Avatar{
-				Avatar72:     user.Avatar,
-				Avatar240:    user.Avatar,
-				Avatar640:    user.Avatar,
-				AvatarOrigin: user.Avatar,
+				Avatar72:     userInfoDetailsResp.Avatar,
+				Avatar240:    userInfoDetailsResp.Avatar,
+				Avatar640:    userInfoDetailsResp.Avatar,
+				AvatarOrigin: userInfoDetailsResp.Avatar,
 			},
 			DepartmentIds: deptIdList,
 		},
