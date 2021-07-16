@@ -3,7 +3,7 @@ package ding
 import (
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
-	"github.com/LLLjjjjjj/work-wechat"
+	"github.com/galaxy-book/work-wechat"
 	"strings"
 )
 
