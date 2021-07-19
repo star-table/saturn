@@ -91,8 +91,8 @@ func (d *dingProxy) CodeLogin(tenantKey, code string) resp.CodeLoginResp {
 	}
 	respData := resp.CodeLoginRespData{
 		UserID:  userInfoResp.UserId,
-		UnionID: userInfoResp.UserId,
-		OpenID:  userInfoResp.UserId,
+		UnionID: userDetailResp.UnionId,
+		OpenID:  userDetailResp.UnionId,
 		Name:    userDetailResp.Name,
 		Avatar:  userDetailResp.Avatar,
 		DeptIds: deptIds,
