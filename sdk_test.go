@@ -21,8 +21,8 @@ type TestCase struct {
 }
 
 var testcases = []TestCase{
-	{platform: ding, tenantKey: "ding696a8496a96bcf58a1320dcb25e91351"},
-	{platform: lark, tenantKey: "2ed263bf32cf1651"},
+	{platform: ding, tenantKey: "ding95ff008aad4bebd0acaaa37764f94726"},
+	//{platform: lark, tenantKey: "2ed263bf32cf1651"},
 }
 
 func assertEqual(t *testing.T, val interface{}, want interface{}) {
@@ -33,8 +33,8 @@ func assertEqual(t *testing.T, val interface{}, want interface{}) {
 
 func NewTestTenant() *SDK {
 	s := New()
-	s.RegistryPlatform(ding, ding2.NewDingProxy(36342, "suiteocpiljyoalvbhrbi", "d1XKtyVpocDrOVJrDqPfqysmLGX7pinWS7iA8l5T7OWPd8aWZWNRfXEJrHoyb5Ng", "12345645615313", "1234567890123456789012345678901234567890123", func() (string, error) {
-		return "", nil
+	s.RegistryPlatform(ding, ding2.NewDingProxy(75917, "suitegq7xfvnj3unkkbig", "CBEWjSdJ2aQV5w9crGM7TD5icSIc5tyU2VOX2UUpYq75Dh22VUOfVNYs3r3HX2oI", "12345645615313", "1234567890123456789012345678901234567890123", func() (string, error) {
+		return "YMYpD97ELlElBCYnd3orCBWeINvMnWIPWXo2xCbmhepKj8wYmgYTlAq7d9lqUt9uGcwhmn8bXatODrgPFeCqCA", nil
 	}))
 	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", func() (string, error) {
 		return "fa5140497af97fab6b768ea212f0a2ec4e0eff62", nil
