@@ -1,4 +1,4 @@
-package ding
+package wechat
 
 import "gitea.bjx.cloud/allstar/saturn/proxy"
 
