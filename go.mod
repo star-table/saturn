@@ -3,7 +3,7 @@ module gitea.bjx.cloud/allstar/saturn
 go 1.16
 
 require (
-	gitea.bjx.cloud/allstar/welink v0.0.0-20210720031035-7c86924c9f7d
+	gitea.bjx.cloud/allstar/welink v0.0.0-20210720053008-e31969bedeb9
 	github.com/galaxy-book/feishu-sdk-golang v0.4.1
 	github.com/galaxy-book/work-wechat v1.1.0
 	github.com/json-iterator/go v1.1.11
