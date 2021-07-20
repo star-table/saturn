@@ -4,59 +4,21 @@ import (
 	"gitea.bjx.cloud/allstar/saturn/model/context"
 	"gitea.bjx.cloud/allstar/saturn/model/req"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
-	"gitea.bjx.cloud/allstar/saturn/util/queue"
 	"gitea.bjx.cloud/allstar/welink"
-	"github.com/galaxy-book/feishu-sdk-golang/sdk"
-	"log"
 	"strconv"
 )
 
-func (w *welinkProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) resp.GetDeptIdsResp {
-	client := sdk.Tenant{
-		TenantAccessToken: ctx.TenantAccessToken,
-	}
-
-	deptIdContains := map[string]bool{}
-	q := queue.New()
-	q.Push("0")
-	if req.ParentId != "" {
-		q.Clear()
-		q.Push(req.ParentId)
-	}
-	for {
-		obj, err := q.Pop()
-		if err != nil {
-			break
-		}
-		parentId := obj.(string)
-
-		hasMore := true
-		pageToken := ""
-		for hasMore {
-			deptSimpleInfoResp, err := client.GetDepartmentSimpleListV2(parentId, pageToken, 100, false)
-			if err != nil {
-				log.Println(err)
-				break
-			}
-			if deptSimpleInfoResp.Code != 0 {
-				log.Println(deptSimpleInfoResp.Code, deptSimpleInfoResp.Msg)
-				break
-			}
-			hasMore = deptSimpleInfoResp.Data.HasMore
-			pageToken = deptSimpleInfoResp.Data.PageToken
-			for _, deptInfo := range deptSimpleInfoResp.Data.DepartmentInfos {
-				if !deptIdContains[deptInfo.Id] {
-					deptIdContains[deptInfo.Id] = true
-					if req.FetchChild {
-						q.Push(deptInfo.Id)
-					}
-				}
-			}
-		}
+func (w *welinkProxy) GetDeptIds(ctx *context.Context, r req.GetDeptIdsReq) resp.GetDeptIdsResp {
+	deptsResp := w.GetDepts(ctx, req.GetDeptsReq{
+		ParentId:   r.ParentId,
+		FetchChild: r.FetchChild,
+	})
+	if !deptsResp.Suc {
+		return resp.GetDeptIdsResp{Resp: deptsResp.Resp}
 	}
 	deptIds := make([]string, 0)
-	for k, _ := range deptIdContains {
-		deptIds = append(deptIds, k)
+	for _, dept := range deptsResp.Data.Depts {
+		deptIds = append(deptIds, dept.ID)
 	}
 	return resp.GetDeptIdsResp{
 		Resp: resp.SucResp(),
@@ -65,58 +27,77 @@ func (w *welinkProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) re
 }
 
 func (w *welinkProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.GetDeptsResp {
-	deptList := welink.ContactV2DepartmentsListRequest()
-	deptList.SetAccessToken(ctx.TenantAccessToken)
-	err := deptList.SetUrl("https://open.welink.huaweicloud.com/api/contact/v3/departments/list")
-	if err != nil {
-		return resp.GetDeptsResp{Resp: resp.ErrResp(err)}
-	}
-	if req.ParentId == "" {
-		deptList.DeptCode = "0"
-	} else {
-		deptList.DeptCode = req.ParentId
-	}
-	if req.FetchChild {
-		deptList.RecursiveFlag = "1"
-	} else {
-		deptList.RecursiveFlag = "0"
-	}
-
+	parentDeptIds := make([]string, 0)
 	depts := make([]resp.Dept, 0)
-	deptIdContains := map[string]bool{}
-	offset := 1
-	limit := 100
-	for {
-		deptList.Limit = strconv.Itoa(limit)
-		deptList.Offset = strconv.Itoa(offset)
-		err, list := deptList.GetResponse()
+	if req.ParentId == "" || req.ParentId == "0" {
+		primaryDepts, err := w.GetSubDepts(ctx, []string{"0"}, false)
 		if err != nil {
 			return resp.GetDeptsResp{Resp: resp.ErrResp(err)}
 		}
-		for _, welinkDept := range list.DepartmentInfo {
-			if !deptIdContains[welinkDept.DeptCode] {
-				deptIdContains[welinkDept.DeptCode] = true
-				depts = append(depts, resp.Dept{
-					Name:         welinkDept.DeptNameCn,
-					ID:           welinkDept.DeptCode,
-					ParentID:     welinkDept.FatherCode,
-					OpenID:       welinkDept.DeptCode,
-					ParentOpenID: welinkDept.FatherCode,
-				})
-			}
+		for _, dept := range primaryDepts {
+			parentDeptIds = append(parentDeptIds, dept.ID)
 		}
-
-		if len(list.DepartmentInfo) < limit {
-			break
-		}
-		offset++
+		depts = append(depts, primaryDepts...)
+	} else {
+		parentDeptIds = append(parentDeptIds, req.ParentId)
 	}
+	subDepts, err := w.GetSubDepts(ctx, parentDeptIds, true)
+	if err != nil {
+		return resp.GetDeptsResp{Resp: resp.ErrResp(err)}
+	}
+	depts = append(depts, subDepts...)
 	return resp.GetDeptsResp{
 		Resp: resp.SucResp(),
 		Data: resp.GetDeptsRespData{
 			Depts: depts,
 		},
 	}
+}
+
+func (w *welinkProxy) GetSubDepts(ctx *context.Context, parentIds []string, fetchChild bool) ([]resp.Dept, error) {
+	deptList := welink.ContactV2DepartmentsListRequest()
+	deptList.SetAccessToken(ctx.TenantAccessToken)
+	err := deptList.SetUrl("https://open.welink.huaweicloud.com/api/contact/v3/departments/list")
+	if err != nil {
+		return nil, err
+	}
+	deptIdContains := map[string]bool{}
+	depts := make([]resp.Dept, 0)
+	for _, parentId := range parentIds {
+		offset := 1
+		limit := 100
+		for {
+			deptList.DeptCode = parentId
+			deptList.Limit = strconv.Itoa(limit)
+			deptList.Offset = strconv.Itoa(offset)
+			if fetchChild {
+				deptList.RecursiveFlag = "1"
+			} else {
+				deptList.RecursiveFlag = "0"
+			}
+			err, list := deptList.GetResponse()
+			if err != nil {
+				return nil, err
+			}
+			for _, welinkDept := range list.DepartmentInfo {
+				if !deptIdContains[welinkDept.DeptCode] {
+					deptIdContains[welinkDept.DeptCode] = true
+					depts = append(depts, resp.Dept{
+						Name:         welinkDept.DeptNameCn,
+						ID:           welinkDept.DeptCode,
+						ParentID:     welinkDept.FatherCode,
+						OpenID:       welinkDept.DeptCode,
+						ParentOpenID: welinkDept.FatherCode,
+					})
+				}
+			}
+			if len(list.DepartmentInfo) < limit {
+				break
+			}
+			offset++
+		}
+	}
+	return depts, nil
 }
 
 func (w *welinkProxy) GetRootDept(ctx *context.Context) resp.GetRootDeptResp {

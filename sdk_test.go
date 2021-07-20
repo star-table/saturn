@@ -5,6 +5,7 @@ import (
 	"gitea.bjx.cloud/allstar/saturn/model/req"
 	ding2 "gitea.bjx.cloud/allstar/saturn/proxy/ding"
 	lark2 "gitea.bjx.cloud/allstar/saturn/proxy/lark"
+	welink2 "gitea.bjx.cloud/allstar/saturn/proxy/welink"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"testing"
 )
@@ -13,6 +14,7 @@ const (
 	ding   = "ding"
 	lark   = "lark"
 	wechat = "wechat"
+	welink = "welink"
 )
 
 type TestCase struct {
@@ -21,8 +23,9 @@ type TestCase struct {
 }
 
 var testcases = []TestCase{
-	{platform: ding, tenantKey: "ding95ff008aad4bebd0acaaa37764f94726"},
+	//{platform: ding, tenantKey: "ding95ff008aad4bebd0acaaa37764f94726"},
 	//{platform: lark, tenantKey: "2ed263bf32cf1651"},
+	{platform: welink, tenantKey: "6A2F303224A44EA7999F417E54DE0B1F"},
 }
 
 func assertEqual(t *testing.T, val interface{}, want interface{}) {
@@ -38,6 +41,9 @@ func NewTestTenant() *SDK {
 	}))
 	s.RegistryPlatform(lark, lark2.NewLarkProxy("cli_9d5e49aae9ae9101", "HDzPYfWmf8rmhsF2hHSvmhTffojOYCdI", func() (string, error) {
 		return "fa5140497af97fab6b768ea212f0a2ec4e0eff62", nil
+	}))
+	s.RegistryPlatform(welink, welink2.NewWelinkProxy("20210716161159595718742", "241e87e6-4825-4bff-8274-3c763a2fef20", func() (string, error) {
+		return "", nil
 	}))
 	return s
 }
@@ -56,7 +62,9 @@ func TestCaller_GetUsers(t *testing.T) {
 		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
 		cer, err := s.GetTenant(testcase.platform, testcase.tenantKey)
 		assertEqual(t, err, nil)
-		r := cer.GetUsers(req.GetUsersReq{})
+		r := cer.GetUsers(req.GetUsersReq{
+			FetchChild: true,
+		})
 		t.Log(json.ToJsonIgnoreError(r))
 		assertEqual(t, r.Suc, true)
 	}
@@ -80,7 +88,9 @@ func TestCaller_GetDepts(t *testing.T) {
 		t.Log("testcase:", json.ToJsonIgnoreError(testcase))
 		cer, err := s.GetTenant(testcase.platform, testcase.tenantKey)
 		assertEqual(t, err, nil)
-		r := cer.GetDepts(req.GetDeptsReq{})
+		r := cer.GetDepts(req.GetDeptsReq{
+			FetchChild: true,
+		})
 		t.Log(json.ToJsonIgnoreError(r))
 		assertEqual(t, r.Suc, true)
 	}

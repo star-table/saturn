@@ -2,6 +2,8 @@ gitea.bjx.cloud/allstar/welink v0.0.0-20210716074706-b79b516bceec h1:+kS4TbIfdCF
 gitea.bjx.cloud/allstar/welink v0.0.0-20210716074706-b79b516bceec/go.mod h1:3zbjYcO2av/lGZyjGo4K9mD/2TgAfcB5lw2DrIRUTAQ=
 gitea.bjx.cloud/allstar/welink v0.0.0-20210719035017-2f15cb940ca6 h1:nz2cBnXibNIXQfeGH4hm5k19SN2I6tNWwW90ULzcIaM=
 gitea.bjx.cloud/allstar/welink v0.0.0-20210719035017-2f15cb940ca6/go.mod h1:3zbjYcO2av/lGZyjGo4K9mD/2TgAfcB5lw2DrIRUTAQ=
+gitea.bjx.cloud/allstar/welink v0.0.0-20210720031035-7c86924c9f7d h1:smhVlsePLnw95O82KD7KF3qZCT51Z7H+m1oZlDUwgQY=
+gitea.bjx.cloud/allstar/welink v0.0.0-20210720031035-7c86924c9f7d/go.mod h1:3zbjYcO2av/lGZyjGo4K9mD/2TgAfcB5lw2DrIRUTAQ=
 github.com/BurntSushi/toml v0.3.1 h1:WXkYYl6Yr3qBf1K79EBnL4mak0OimBfB0XUf9Vl28OQ=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/aliyun/aliyun-oss-go-sdk v2.1.5+incompatible h1:v5yDfjkRY/kOxu05gkh0/D/2wYxbTFCoTr3JqFI0FLE=

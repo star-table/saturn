@@ -21,7 +21,7 @@ func (w *wechatProxy) GetDeptIds(ctx *context.Context, req req.GetDeptIdsReq) re
 		return resp.GetDeptIdsResp{Resp: resp.Resp{Code: deptListResp.ErrCode, Msg: deptListResp.ErrMsg}}
 	}
 	parentId := 0
-	if req.ParentId != "" {
+	if req.ParentId != "" && req.ParentId != "0" {
 		parentId, _ = strconv.Atoi(req.ParentId)
 	}
 	deptIds := make([]string, 0)
@@ -48,7 +48,7 @@ func (w *wechatProxy) GetDepts(ctx *context.Context, req req.GetDeptsReq) resp.G
 		return resp.GetDeptsResp{Resp: resp.Resp{Code: deptListResp.ErrCode, Msg: deptListResp.ErrMsg}}
 	}
 	parentId := 0
-	if req.ParentId != "" {
+	if req.ParentId != "" && req.ParentId != "0" {
 		parentId, _ = strconv.Atoi(req.ParentId)
 	}
 	depts := make([]resp.Dept, 0)
