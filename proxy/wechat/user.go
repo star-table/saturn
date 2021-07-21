@@ -1,6 +1,7 @@
 package wechat
 
 import (
+	c1 "context"
 	"gitea.bjx.cloud/allstar/saturn/model/context"
 	"gitea.bjx.cloud/allstar/saturn/model/req"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
@@ -18,7 +19,7 @@ func (w *wechatProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.Get
 		fetchChild = 1
 	}
 	action := work.GetDeptMemberList(ctx.TenantAccessToken, r.DepartmentID, fetchChild)
-	respBody, err := action.GetRequestBody()
+	respBody, err := action.DoRequest(c1.Background())
 	if err != nil {
 		return resp.GetUsersResp{Resp: resp.ErrResp(err)}
 	}
@@ -62,7 +63,7 @@ func (w *wechatProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.Get
 
 func (w *wechatProxy) GetUser(ctx *context.Context, id string) resp.GetUserResp {
 	action := work.GetUserInfoAction(ctx.TenantAccessToken, id)
-	respBody, err := action.GetRequestBody()
+	respBody, err := action.DoRequest(c1.Background())
 	if err != nil {
 		return resp.GetUserResp{Resp: resp.ErrResp(err)}
 	}

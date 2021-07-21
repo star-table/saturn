@@ -1,6 +1,7 @@
 package wechat
 
 import (
+	c1 "context"
 	"gitea.bjx.cloud/allstar/saturn/model/context"
 	"gitea.bjx.cloud/allstar/saturn/model/req"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
@@ -24,7 +25,7 @@ func (w *wechatProxy) SendMsg(ctx *context.Context, req req.SendMsgReq) resp.Sen
 		msg.ToTag = strings.Join(req.ChatIds, "|")
 	}
 	action := work.SendMsg(ctx.TenantAccessToken, msg)
-	respBody, err := action.GetRequestBody()
+	respBody, err := action.DoRequest(c1.Background())
 	if err != nil {
 		return resp.SendMsgResp{Resp: resp.ErrResp(err)}
 	}

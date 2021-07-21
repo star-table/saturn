@@ -1,6 +1,7 @@
 package wechat
 
 import (
+	c1 "context"
 	"gitea.bjx.cloud/allstar/saturn/model/resp"
 	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"github.com/galaxy-book/work-wechat"
@@ -40,7 +41,7 @@ func (w *wechatProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAcces
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
 	}
 	action := work.GetCorpAuthInfoAction(suiteAccessTokenResp.SuiteAccessToken, wechatSDK.CorpId, wechatSDK.PermanentCode)
-	respBody, err := action.GetRequestBody()
+	respBody, err := action.DoRequest(c1.Background())
 	if err != nil {
 		return resp.GetTenantAccessTokenResp{Resp: resp.ErrResp(err)}
 	}
@@ -101,7 +102,7 @@ func (w *wechatProxy) getUserInfo3rd(code string) (*work.GetUserInfo3rdResp, *wo
 	}
 
 	action := work.GetUserInfo3RD(suiteAccessTokenResp.SuiteAccessToken, code)
-	respBody, err := action.GetRequestBody()
+	respBody, err := action.DoRequest(c1.Background())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -109,7 +110,7 @@ func (w *wechatProxy) getUserInfo3rd(code string) (*work.GetUserInfo3rdResp, *wo
 	json.FromJsonIgnoreError(string(respBody), &userInfo3rdResp)
 
 	action = work.GetUserDetail3RD(suiteAccessTokenResp.SuiteAccessToken, userInfo3rdResp.UserTicket)
-	respBody, err = action.GetRequestBody()
+	respBody, err = action.DoRequest(c1.Background())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -129,7 +130,7 @@ func (w *wechatProxy) getLoginUserInfo(code string) (*work.GetLoginInfoResp, err
 		return nil, err
 	}
 	action := work.GetLoginInfo(providerAccessTokenResp.ProviderAccessToken, code)
-	respBody, err := action.GetRequestBody()
+	respBody, err := action.DoRequest(c1.Background())
 	if err != nil {
 		return nil, err
 	}
