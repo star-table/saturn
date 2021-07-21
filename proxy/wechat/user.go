@@ -12,7 +12,7 @@ import (
 
 func (w *wechatProxy) GetUsers(ctx *context.Context, r req.GetUsersReq) resp.GetUsersResp {
 	if r.DepartmentID == "" {
-		r.DepartmentID = "0"
+		r.DepartmentID = "1"
 	}
 	fetchChild := 0
 	if r.FetchChild {

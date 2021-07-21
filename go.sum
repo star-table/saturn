@@ -14,8 +14,8 @@ github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWo
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
 github.com/galaxy-book/feishu-sdk-golang v0.4.1 h1:CuckU55njPrS1ef4O9JiP51OPASxyjndvvLMlUhRIac=
 github.com/galaxy-book/feishu-sdk-golang v0.4.1/go.mod h1:B92EH0zTAf3vKagLdCAjKwnSeoFBEkfy6kNfyIMnyFY=
-github.com/galaxy-book/work-wechat v1.1.1 h1:Wd7lZMq9RwQR2ZTEzL1R9lw3zXIRZvukQR0baJjVBls=
-github.com/galaxy-book/work-wechat v1.1.1/go.mod h1:OgcguX7KQok+3irKbAlD4loOXjCxq/WXBzp2Ra8NCVI=
+github.com/galaxy-book/work-wechat v1.1.3 h1:TdVOmIwEwCiB6hgMPALkMgKYPJnPCImNauR9uknJNf4=
+github.com/galaxy-book/work-wechat v1.1.3/go.mod h1:OgcguX7KQok+3irKbAlD4loOXjCxq/WXBzp2Ra8NCVI=
 github.com/go-sql-driver/mysql v1.5.0 h1:ozyZYNQW3x3HtqT1jira07DN2PArx2v7/mN66gGcHOs=
 github.com/go-sql-driver/mysql v1.5.0/go.mod h1:DCzpHaOWr8IXmIStZouvnhqoel9Qv2LBy8hT2VhHyBg=
 github.com/gogf/gf v1.15.7 h1:MrVybM5P2jlHqZsYhqEZPxHsj0Y5TlwWuIKuYoosGPg=
