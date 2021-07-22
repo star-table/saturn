@@ -27,7 +27,7 @@ var testcases = []TestCase{
 	//{platform: ding, tenantKey: "ding95ff008aad4bebd0acaaa37764f94726"},
 	//{platform: lark, tenantKey: "2ed263bf32cf1651"},
 	//{platform: welink, tenantKey: "6A2F303224A44EA7999F417E54DE0B1F"},
-	{platform: wechat, tenantKey: "wwf36b5e6ef0b569ac:JGTO2F8SLhbqKezTw_zjB0lYBxbi0BToHfcQmFXG9TM"},
+	{platform: wechat, tenantKey: "wwf36b5e6ef0b569ac:RgCd3Ms42Mg1NpTui6CT_9AZxXWbNaV2BuvcRPptvXI"},
 }
 
 func assertEqual(t *testing.T, val interface{}, want interface{}) {
@@ -48,7 +48,7 @@ func NewTestTenant() *SDK {
 		return "", nil
 	}))
 	s.RegistryPlatform(wechat, wechat2.NewWechatProxy("wwf36b5e6ef0b569ac", "", "ww9b85ae8ff033ee89", "BCLomiIeq8je52OqsXusskBMSMO8LSLnuIxpxMnfhrc", func() (string, error) {
-		return "zHIaXmHYu-UWu_hOXICtN1AZ8hzh0Qv5WrIOAHTphSDjO_VpIri-pOZc9UwGRECc", nil
+		return "zHIaXmHYu-UWu_hOXICtNz0omNxiAxzCUfziZi-72hHxYJwOfzGfDbBfbv2EJfZr", nil
 	}))
 	return s
 }
