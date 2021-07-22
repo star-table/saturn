@@ -1,9 +1,9 @@
 package ding
 
 import (
-	"gitea.bjx.cloud/allstar/saturn/model/context"
-	"gitea.bjx.cloud/allstar/saturn/model/req"
-	"gitea.bjx.cloud/allstar/saturn/model/resp"
+	"github.com/galaxy-book/saturn/model/context"
+	"github.com/galaxy-book/saturn/model/req"
+	"github.com/galaxy-book/saturn/model/resp"
 	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
 	"log"
 	"strconv"

@@ -1,8 +1,8 @@
 package welink
 
 import (
-	"gitea.bjx.cloud/allstar/saturn/model/resp"
 	"gitea.bjx.cloud/allstar/welink"
+	"github.com/galaxy-book/saturn/model/resp"
 )
 
 func (w *welinkProxy) getAppAccessToken() (string, error) {

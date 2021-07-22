@@ -1,6 +1,6 @@
 package lark
 
-import "gitea.bjx.cloud/allstar/saturn/proxy"
+import "github.com/galaxy-book/saturn/proxy"
 
 type larkProxy struct {
 	AppId  string

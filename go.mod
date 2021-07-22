@@ -1,4 +1,4 @@
-module gitea.bjx.cloud/allstar/saturn
+module github.com/galaxy-book/saturn
 
 go 1.16
 

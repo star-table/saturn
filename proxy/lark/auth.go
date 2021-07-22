@@ -3,10 +3,10 @@ package lark
 import (
 	"errors"
 	"fmt"
-	"gitea.bjx.cloud/allstar/saturn/model/resp"
-	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"github.com/galaxy-book/feishu-sdk-golang/core/model/vo"
 	"github.com/galaxy-book/feishu-sdk-golang/sdk"
+	"github.com/galaxy-book/saturn/model/resp"
+	"github.com/galaxy-book/saturn/util/json"
 )
 
 func (l *larkProxy) GetTenantAccessToken(tenantKey string) resp.GetTenantAccessTokenResp {

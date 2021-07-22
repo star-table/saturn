@@ -1,12 +1,12 @@
 package lark
 
 import (
-	"gitea.bjx.cloud/allstar/saturn/model/context"
-	"gitea.bjx.cloud/allstar/saturn/model/req"
-	"gitea.bjx.cloud/allstar/saturn/model/resp"
-	"gitea.bjx.cloud/allstar/saturn/util/json"
 	"github.com/galaxy-book/feishu-sdk-golang/core/model/vo"
 	"github.com/galaxy-book/feishu-sdk-golang/sdk"
+	"github.com/galaxy-book/saturn/model/context"
+	"github.com/galaxy-book/saturn/model/req"
+	"github.com/galaxy-book/saturn/model/resp"
+	"github.com/galaxy-book/saturn/util/json"
 )
 
 var supportedBatchSendMsgType = map[string]bool{

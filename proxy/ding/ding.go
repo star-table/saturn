@@ -1,6 +1,6 @@
 package ding
 
-import "gitea.bjx.cloud/allstar/saturn/proxy"
+import "github.com/galaxy-book/saturn/proxy"
 
 type dingProxy struct {
 	AppId       int64

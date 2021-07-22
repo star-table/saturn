@@ -2,12 +2,12 @@ package saturn
 
 import (
 	"fmt"
-	"gitea.bjx.cloud/allstar/saturn/model/req"
-	ding2 "gitea.bjx.cloud/allstar/saturn/proxy/ding"
-	lark2 "gitea.bjx.cloud/allstar/saturn/proxy/lark"
-	wechat2 "gitea.bjx.cloud/allstar/saturn/proxy/wechat"
-	welink2 "gitea.bjx.cloud/allstar/saturn/proxy/welink"
-	"gitea.bjx.cloud/allstar/saturn/util/json"
+	"github.com/galaxy-book/saturn/model/req"
+	ding2 "github.com/galaxy-book/saturn/proxy/ding"
+	lark2 "github.com/galaxy-book/saturn/proxy/lark"
+	wechat2 "github.com/galaxy-book/saturn/proxy/wechat"
+	welink2 "github.com/galaxy-book/saturn/proxy/welink"
+	"github.com/galaxy-book/saturn/util/json"
 	"testing"
 )
 

@@ -5,7 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"fmt"
-	"gitea.bjx.cloud/allstar/saturn/model/resp"
+	"github.com/galaxy-book/saturn/model/resp"
 	"github.com/polaris-team/dingtalk-sdk-golang/sdk"
 	"net/url"
 	"strconv"
